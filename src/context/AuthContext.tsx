@@ -1,37 +1,40 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import type { AuthUser } from "@/lib/auth-types";
 
-const AuthContext = createContext<any>(null);
+interface AuthContextValue {
+  user: AuthUser | null;
+  loading: boolean;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/auth/profile")
-      .then(res => {
-         if(res.ok) return res.json();
-         throw new Error("unauthorized");
+    fetch("/api/me")
+      .then((res) => {
+        if (res.ok) return res.json() as Promise<AuthUser>;
+        throw new Error("unauthorized");
       })
-      .then(data => {
-         setUser({
-            id: data.sub,
-            name: data.name,
-            email: data.email,
-            avatar: data.picture
-         });
-         setLoading(false);
+      .then((data) => {
+        setUser(data);
+        setLoading(false);
       })
       .catch(() => {
-         setUser(null);
-         setLoading(false);
+        setUser(null);
+        setLoading(false);
       });
   }, []);
 
-  const logout = () => {
-     window.location.href = "/auth/logout";
-  }
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    window.location.href = "/auth/logout";
+  };
 
   return <AuthContext.Provider value={{ user, loading, logout }}>{children}</AuthContext.Provider>;
 }

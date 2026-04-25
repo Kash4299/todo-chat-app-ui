@@ -10,6 +10,7 @@ import {
     Zap,
     ChevronLeft,
     ChevronRight,
+    KeyRound,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -22,6 +23,32 @@ export default function Sidebar() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
     const [collapsed, setCollapsed] = useState(false);
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [password, setPassword] = useState("");
+    const [passwordMessage, setPasswordMessage] = useState("");
+    const [passwordLoading, setPasswordLoading] = useState(false);
+
+    const addPassword = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setPasswordMessage("");
+        setPasswordLoading(true);
+
+        const response = await fetch("/api/auth/password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password }),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+            setPassword("");
+            setPasswordMessage(payload.message || "Password set successfully");
+        } else {
+            setPasswordMessage(payload.error || "Could not set password");
+        }
+
+        setPasswordLoading(false);
+    };
 
     return (
         <aside
@@ -75,21 +102,67 @@ export default function Sidebar() {
             {/* User Section */}
             <div className="p-3 border-t border-border">
                 {user && (
-                    <div
-                        className={`flex items-center gap-3 mb-3 px-3 py-2 ${collapsed ? "justify-center" : ""}`}
-                    >
-                        <img
-                            src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`}
-                            alt={user.name || "User"}
-                            className="w-9 h-9 rounded-full shrink-0 ring-2 ring-border"
-                        />
+                    <>
+                        <div
+                            className={`flex items-center gap-3 mb-3 px-3 py-2 ${collapsed ? "justify-center" : ""}`}
+                        >
+                            <img
+                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`}
+                                alt={user.name || "User"}
+                                className="w-9 h-9 rounded-full shrink-0 ring-2 ring-border"
+                            />
+                            {!collapsed && (
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-text truncate">{user.name}</p>
+                                    <p className="text-xs text-text-dim truncate">{user.email}</p>
+                                </div>
+                            )}
+                        </div>
                         {!collapsed && (
-                            <div className="min-w-0">
-                                <p className="text-sm font-semibold text-text truncate">{user.name}</p>
-                                <p className="text-xs text-text-dim truncate">{user.email}</p>
+                            <div className="mb-3">
+                                {showPasswordForm ? (
+                                    <form onSubmit={addPassword} className="space-y-2 px-3">
+                                        <input
+                                            value={password}
+                                            onChange={(event) => setPassword(event.target.value)}
+                                            className="w-full rounded-lg bg-bg border border-border px-3 py-2 text-sm text-text placeholder:text-text-dim"
+                                            placeholder="New password"
+                                            type="password"
+                                            minLength={8}
+                                            required
+                                        />
+                                        {passwordMessage && (
+                                            <p className="text-xs text-text-muted">{passwordMessage}</p>
+                                        )}
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="submit"
+                                                disabled={passwordLoading}
+                                                className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                                            >
+                                                {passwordLoading ? "Saving..." : "Save"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPasswordForm(false)}
+                                                className="rounded-lg border border-border px-3 py-2 text-xs text-text-muted"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowPasswordForm(true)}
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-text hover:bg-bg-lighter transition-all duration-200 cursor-pointer w-full"
+                                    >
+                                        <KeyRound className="w-5 h-5 shrink-0" />
+                                        <span>Add password</span>
+                                    </button>
+                                )}
                             </div>
                         )}
-                    </div>
+                    </>
                 )}
                 <button
                     onClick={logout}
