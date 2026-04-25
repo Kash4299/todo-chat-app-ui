@@ -1,42 +1,21 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth, AuthProvider } from "@/context/AuthContext";
+import { auth0 } from "@/lib/auth0";
+import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import { AuthProvider } from "@/context/AuthContext";
 
-function DashboardGuard({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth();
-    const router = useRouter();
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+    const session = await auth0.getSession();
 
-    useEffect(() => {
-        if (!loading && !user) {
-            router.replace("/login");
-        }
-    }, [user, loading, router]);
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
+    if (!session) {
+        redirect("/auth/login");
     }
 
-    if (!user) return null;
-
-    return (
-        <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <main className="flex-1 overflow-y-auto">{children}</main>
-        </div>
-    );
-}
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <AuthProvider>
-            <DashboardGuard>{children}</DashboardGuard>
+            <div className="flex h-screen overflow-hidden">
+                <Sidebar />
+                <main className="flex-1 overflow-y-auto">{children}</main>
+            </div>
         </AuthProvider>
     );
 }
