@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 type Mode = "login" | "register";
@@ -11,9 +11,10 @@ interface AuthError {
 
 export default function AuthCard() {
   const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("minh.an@kashflow.vn");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +36,7 @@ export default function AuthCard() {
     });
 
     if (response.ok) {
-      window.location.href = "/todos";
+      window.location.href = "/home";
       return;
     }
 
@@ -43,7 +44,7 @@ export default function AuthCard() {
     try {
       payload = (await response.json()) as AuthError;
     } catch {
-      // The API normally returns { error }, but keep a deterministic fallback.
+      // No-op: keep deterministic fallback.
     }
 
     setError(payload.error || "Authentication failed");
@@ -51,27 +52,60 @@ export default function AuthCard() {
   };
 
   return (
-    <div className="bg-surface/80 backdrop-blur-xl border border-border rounded-2xl p-8 shadow-2xl shadow-black/20">
+    <div className="card-base p-6 md:p-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold tracking-tight text-text">
+          {isRegister ? "Tạo tài khoản" : "Đăng nhập"}
+        </h1>
+        <p className="mt-2 text-sm text-text-dim">
+          {isRegister ? "Đã có tài khoản?" : "Chưa có tài khoản?"}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setError("");
+              setMode(isRegister ? "login" : "register");
+            }}
+            className="cursor-pointer font-semibold text-primary hover:underline"
+          >
+            {isRegister ? "Đăng nhập" : "Đăng ký miễn phí"}
+          </button>
+        </p>
+      </div>
+
+      <a
+        href="/auth/login"
+        className="btn-base flex w-full items-center justify-center gap-2 border border-border bg-bg-light px-4 py-3 text-sm font-semibold text-text hover:bg-bg-lighter"
+      >
+        Tiếp tục với Auth0
+      </a>
+
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-dim">hoặc</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       <form onSubmit={submit} className="space-y-4">
         {isRegister && (
           <label className="block">
-            <span className="block text-sm font-medium text-text-muted mb-1.5">Display name</span>
+            <span className="mb-1.5 block text-sm font-semibold text-text-muted">Họ tên</span>
             <input
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
-              className="w-full rounded-xl bg-bg border border-border px-4 py-3 text-text placeholder:text-text-dim focus:border-primary"
-              placeholder="Jane Doe"
+              className="input-base w-full px-4 py-3 text-sm"
+              placeholder="Nguyen Van A"
               autoComplete="name"
+              required
             />
           </label>
         )}
 
         <label className="block">
-          <span className="block text-sm font-medium text-text-muted mb-1.5">Email</span>
+          <span className="mb-1.5 block text-sm font-semibold text-text-muted">Email</span>
           <input
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl bg-bg border border-border px-4 py-3 text-text placeholder:text-text-dim focus:border-primary"
+            className="input-base w-full px-4 py-3 text-sm"
             placeholder="you@example.com"
             type="email"
             autoComplete="email"
@@ -80,21 +114,31 @@ export default function AuthCard() {
         </label>
 
         <label className="block">
-          <span className="block text-sm font-medium text-text-muted mb-1.5">Password</span>
-          <input
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl bg-bg border border-border px-4 py-3 text-text placeholder:text-text-dim focus:border-primary"
-            placeholder="At least 8 characters"
-            type="password"
-            autoComplete={isRegister ? "new-password" : "current-password"}
-            minLength={8}
-            required
-          />
+          <span className="mb-1.5 block text-sm font-semibold text-text-muted">Mật khẩu</span>
+          <div className="input-base flex items-center gap-2 px-3 py-2.5">
+            <input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full bg-transparent text-sm outline-none"
+              placeholder="At least 8 characters"
+              type={showPassword ? "text" : "password"}
+              autoComplete={isRegister ? "new-password" : "current-password"}
+              minLength={8}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="cursor-pointer rounded-md p-1 text-text-dim hover:bg-bg-lighter hover:text-text"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </label>
 
         {error && (
-          <p className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+          <p className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
             {error}
           </p>
         )}
@@ -102,39 +146,12 @@ export default function AuthCard() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3.5 bg-gradient-to-r from-primary to-primary-light text-white font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn-base flex w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-sm font-bold text-white shadow-[var(--shadow-pop)] hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Please wait..." : isRegister ? "Create account" : "Sign in"}
-          <ArrowRight className="w-5 h-5" />
+          {loading ? "Please wait..." : isRegister ? "Tạo tài khoản" : "Đăng nhập"}
+          <ArrowRight className="h-4 w-4" />
         </button>
       </form>
-
-      <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs uppercase tracking-wider text-text-dim">or</span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
-      <a
-        href="/auth/login"
-        className="w-full py-3 rounded-xl border border-border text-text font-semibold flex items-center justify-center hover:bg-bg-lighter transition-colors duration-200"
-      >
-        Continue with Auth0
-      </a>
-
-      <p className="mt-6 text-center text-sm text-text-muted">
-        {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
-        <button
-          type="button"
-          onClick={() => {
-            setError("");
-            setMode(isRegister ? "login" : "register");
-          }}
-          className="text-primary hover:text-primary-light font-semibold transition-colors duration-200 cursor-pointer"
-        >
-          {isRegister ? "Sign in" : "Create one"}
-        </button>
-      </p>
     </div>
   );
 }

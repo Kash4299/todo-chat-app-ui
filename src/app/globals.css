@@ -1,135 +1,152 @@
 @import "tailwindcss";
 
-@theme {
-  --color-primary: #0D9488;
-  --color-primary-light: #14B8A6;
-  --color-primary-dark: #0F766E;
-  --color-accent: #F97316;
-  --color-accent-light: #FB923C;
-  --color-bg: #0F172A;
-  --color-bg-light: #1E293B;
-  --color-bg-lighter: #334155;
-  --color-surface: #1E293B;
-  --color-surface-hover: #334155;
-  --color-text: #F1F5F9;
-  --color-text-muted: #94A3B8;
-  --color-text-dim: #64748B;
-  --color-border: #334155;
-  --color-border-light: #475569;
-  --color-danger: #EF4444;
-  --color-danger-hover: #DC2626;
-  --color-success: #22C55E;
-  --color-warning: #EAB308;
-  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+:root {
+  --brand-cobalt: #2e78d4;
+  --brand-cobalt-ink: #1e5bae;
+  --brand-cobalt-soft: #ddeafb;
+  --brand-cobalt-50: #eef5fd;
+  --brand-saffron: #ff8a3d;
+  --brand-clover: #1b8a5a;
+  --brand-clover-soft: #d6eee1;
+  --brand-ruby: #e6584f;
+  --brand-ruby-soft: #fbe0dc;
+
+  --ink-900: #1a1b2e;
+  --ink-800: #262741;
+  --ink-700: #353859;
+  --ink-600: #4a4e6e;
+  --ink-500: #6b6f8a;
+  --ink-400: #9094ac;
+  --ink-300: #bdc0d1;
+  --ink-200: #e2e4ee;
+  --ink-100: #eef0f7;
+  --ink-50: #f6f7fb;
+
+  --fg-1: var(--ink-900);
+  --fg-2: var(--ink-600);
+  --fg-3: var(--ink-500);
+  --fg-4: var(--ink-400);
+
+  --primary: var(--brand-cobalt);
+  --primary-ink: var(--brand-cobalt-ink);
+  --primary-soft: var(--brand-cobalt-soft);
+
+  --bg: #f4f5f9;
+  --surface: #ffffff;
+  --surface-2: #f7f8fb;
+  --surface-3: #eff1f6;
+  --divider: rgba(26, 27, 46, 0.08);
+  --border-soft: rgba(26, 27, 46, 0.12);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  --shadow-card: 0 1px 2px rgba(26, 27, 46, 0.06), 0 8px 20px rgba(26, 27, 46, 0.05);
+  --shadow-pop: 0 10px 24px rgba(46, 120, 212, 0.26);
 }
 
-/* Base Styles */
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-light: #4d8ddb;
+  --color-primary-dark: var(--primary-ink);
+  --color-accent: var(--brand-saffron);
+  --color-bg: var(--bg);
+  --color-bg-light: var(--surface-2);
+  --color-bg-lighter: var(--surface-3);
+  --color-surface: var(--surface);
+  --color-surface-hover: #f2f4f9;
+  --color-text: var(--fg-1);
+  --color-text-muted: var(--fg-2);
+  --color-text-dim: var(--fg-3);
+  --color-border: var(--border-soft);
+  --color-border-light: rgba(26, 27, 46, 0.2);
+  --color-danger: var(--brand-ruby);
+  --color-danger-hover: #be3a32;
+  --color-success: var(--brand-clover);
+  --color-warning: #c99a1a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-sans);
   min-height: 100vh;
+  background: radial-gradient(circle at 8% -12%, #d9e7fb 0%, transparent 38%),
+    radial-gradient(circle at 92% 0%, #fce9da 0%, transparent 30%),
+    var(--bg);
+  color: var(--fg-1);
 }
 
-/* Custom Scrollbar */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-bg);
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-bg-lighter);
-  border-radius: 3px;
+  background: rgba(26, 27, 46, 0.18);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-light);
+  background: rgba(26, 27, 46, 0.26);
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slideInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(13, 148, 136, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(13, 148, 136, 0.6); }
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-.animate-slide-in-left {
-  animation: slideInLeft 0.4s ease-out forwards;
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 0.4s ease-out forwards;
-}
-
-.animate-slide-in-up {
-  animation: slideInUp 0.4s ease-out forwards;
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 8s ease infinite;
-}
-
-/* Staggered animations */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
-.stagger-5 { animation-delay: 0.25s; }
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Focus ring */
-*:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+.animate-fade-in {
+  animation: fadeUp 220ms ease-out forwards;
 }
 
-/* Selection */
-::selection {
-  background: rgba(13, 148, 136, 0.3);
-  color: var(--color-text);
+.btn-base {
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  transition: all 140ms ease;
+}
+
+.input-base {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.input-base:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+  outline: none;
+}
+
+.card-base {
+  border: 1px solid rgba(26, 27, 46, 0.07);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }

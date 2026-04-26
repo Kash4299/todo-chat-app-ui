@@ -1,284 +1,99 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { EmptyState, ErrorState, LoadingState } from "@/components/StateView";
-import {
-    Plus,
-    Trash2,
-    Check,
-    Circle,
-    ListFilter,
-    Flag,
-    BarChart3,
-    Sparkles,
-} from "lucide-react";
+import { EmptyState, LoadingState } from "@/components/StateView";
+import TaskDetailModal from "@/components/TaskDetailModal";
+import { TaskCard, ViewHeader } from "@/components/workspace-ui";
+import { ME_ID, USER_BY_ID, type MockTask, loadMockTasks, saveMockTasks } from "@/lib/mock-workspace";
 
-interface Todo {
-    id: string;
-    text: string;
-    completed: boolean;
-    priority: "low" | "medium" | "high";
-    createdAt: number;
+function TaskSection({
+  title,
+  items,
+  accent,
+  onMarkDone,
+  onOpenTask,
+}: {
+  title: string;
+  items: MockTask[];
+  accent: string;
+  onMarkDone: (taskId: string) => void;
+  onOpenTask: (task: MockTask) => void;
+}) {
+  return (
+    <section className="mb-5">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
+        <h2 className="text-sm font-bold text-text">{title}</h2>
+        <span className="rounded-full bg-bg-lighter px-2 py-0.5 text-xs text-text-dim">{items.length}</span>
+      </div>
+      <div className="space-y-2">
+        {items.map((task) => (
+          <div key={task.id} className="relative">
+            <TaskCard task={task} assignee={USER_BY_ID[task.assignee_id]} onClick={() => onOpenTask(task)} />
+            {task.status !== "DONE" ? (
+              <button
+                onClick={() => onMarkDone(task.id)}
+                className="absolute right-2 top-2 rounded-md border border-border bg-surface px-2 py-1 text-[11px] font-semibold text-text-muted hover:bg-bg-light"
+              >
+                Mark done
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
-type Filter = "all" | "active" | "completed";
-
-const priorityConfig = {
-    low: { label: "Low", color: "text-primary", bg: "bg-primary/10", border: "border-primary/30" },
-    medium: { label: "Med", color: "text-warning", bg: "bg-warning/10", border: "border-warning/30" },
-    high: { label: "High", color: "text-danger", bg: "bg-danger/10", border: "border-danger/30" },
-};
-
 export default function TodosPage() {
-    const { user, loading } = useAuth();
-    const [todos, setTodos] = useState<Todo[]>([]);
-    const [input, setInput] = useState("");
-    const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
-    const [filter, setFilter] = useState<Filter>("all");
-    const [mounted, setMounted] = useState(false);
-    const [loadError, setLoadError] = useState("");
+  const { loading } = useAuth();
+  const [tasks, setTasks] = useState(() => loadMockTasks());
+  const [now] = useState(() => Date.now());
+  const [openTask, setOpenTask] = useState<MockTask | null>(null);
 
-    const storageKey = user?.id ? `todochat_todos_${user.id}` : "";
+  const mine = useMemo(() => tasks.filter((task) => task.assignee_id === ME_ID), [tasks]);
 
-    useEffect(() => {
-        if (!storageKey) return;
-
-        const timeout = window.setTimeout(() => {
-            try {
-                const stored = localStorage.getItem(storageKey);
-                if (stored) setTodos(JSON.parse(stored));
-            } catch {
-                setLoadError("Could not load saved todos.");
-            }
-            setMounted(true);
-        }, 0);
-
-        return () => window.clearTimeout(timeout);
-    }, [storageKey]);
-
-    useEffect(() => {
-        if (mounted && storageKey) {
-            localStorage.setItem(storageKey, JSON.stringify(todos));
-        }
-    }, [todos, storageKey, mounted]);
-
-    const addTodo = () => {
-        const trimmed = input.trim();
-        if (!trimmed) return;
-
-        const newTodo: Todo = {
-            id: Date.now().toString(36) + Math.random().toString(36).substring(2),
-            text: trimmed,
-            completed: false,
-            priority,
-            createdAt: Date.now(),
-        };
-
-        setTodos((prev) => [newTodo, ...prev]);
-        setInput("");
+  const grouped = useMemo(() => {
+    return {
+      overdue: mine.filter((task) => new Date(task.due_date).getTime() < now && task.status !== "DONE"),
+      inProgress: mine.filter((task) => task.status === "IN_PROGRESS"),
+      review: mine.filter((task) => task.status === "REVIEW"),
+      done: mine.filter((task) => task.status === "DONE"),
     };
+  }, [mine, now]);
 
-    const toggleTodo = (id: string) => {
-        setTodos((prev) =>
-            prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
-        );
-    };
+  const persist = (next: MockTask[]) => {
+    setTasks(next);
+    saveMockTasks(next);
+  };
 
-    const deleteTodo = (id: string) => {
-        setTodos((prev) => prev.filter((t) => t.id !== id));
-    };
+  const markDone = (taskId: string) => {
+    persist(tasks.map((task) => (task.id === taskId ? { ...task, status: "DONE" as const } : task)));
+  };
 
-    const filtered = useMemo(() => {
-        switch (filter) {
-            case "active":
-                return todos.filter((t) => !t.completed);
-            case "completed":
-                return todos.filter((t) => t.completed);
-            default:
-                return todos;
-        }
-    }, [todos, filter]);
+  const saveTask = (nextTask: MockTask) => {
+    persist(tasks.map((task) => (task.id === nextTask.id ? nextTask : task)));
+  };
 
-    const stats = useMemo(() => {
-        const total = todos.length;
-        const completed = todos.filter((t) => t.completed).length;
-        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-        return { total, completed, active: total - completed, percentage };
-    }, [todos]);
+  if (loading) return <LoadingState title="Loading my tasks" />;
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") addTodo();
-    };
-
-    if (loading || !mounted) {
-        return <LoadingState title="Loading todos" />;
-    }
-
-    return (
-        <div className="p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-text flex items-center gap-3">
-                    <Sparkles className="w-8 h-8 text-primary" />
-                    My Todos
-                </h1>
-                <p className="text-text-muted mt-1">Stay organized, get things done</p>
-            </div>
-
-            {/* Stats Bar */}
-            <div className="bg-surface border border-border rounded-2xl p-5 mb-6">
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 text-text-muted text-sm">
-                        <BarChart3 className="w-4 h-4" />
-                        <span>Progress</span>
-                    </div>
-                    <span className="text-sm font-semibold text-text">
-                        {stats.completed}/{stats.total} completed
-                    </span>
-                </div>
-                <div className="w-full h-2.5 bg-bg-lighter rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${stats.percentage}%` }}
-                    />
-                </div>
-                <div className="flex gap-4 mt-3">
-                    <span className="text-xs text-text-dim">
-                        <span className="text-primary font-semibold">{stats.active}</span> active
-                    </span>
-                    <span className="text-xs text-text-dim">
-                        <span className="text-success font-semibold">{stats.completed}</span> done
-                    </span>
-                </div>
-            </div>
-
-            {/* Add Todo */}
-            <div className="bg-surface border border-border rounded-2xl p-4 mb-6">
-                <div className="flex gap-3">
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="What needs to be done?"
-                        className="flex-1 px-4 py-3 bg-bg-light border border-border rounded-xl text-text placeholder:text-text-dim focus:border-primary focus:ring-1 focus:ring-primary transition-colors duration-200"
-                    />
-                    <div className="flex items-center gap-2">
-                        {/* Priority Selector */}
-                        <div className="flex items-center bg-bg-light border border-border rounded-xl overflow-hidden">
-                            {(["low", "medium", "high"] as const).map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => setPriority(p)}
-                                    className={`px-3 py-3 text-xs font-semibold transition-all duration-200 cursor-pointer ${priority === p
-                                            ? `${priorityConfig[p].bg} ${priorityConfig[p].color}`
-                                            : "text-text-dim hover:text-text-muted"
-                                        }`}
-                                >
-                                    <Flag className="w-4 h-4" />
-                                </button>
-                            ))}
-                        </div>
-                        <button
-                            onClick={addTodo}
-                            disabled={!input.trim()}
-                            className="p-3 bg-gradient-to-r from-primary to-primary-light text-white rounded-xl hover:shadow-lg hover:shadow-primary/25 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            <Plus className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex items-center gap-2 mb-4">
-                <ListFilter className="w-4 h-4 text-text-dim" />
-                {(["all", "active", "completed"] as const).map((f) => (
-                    <button
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer capitalize ${filter === f
-                                ? "bg-primary/15 text-primary"
-                                : "text-text-muted hover:text-text hover:bg-bg-lighter"
-                            }`}
-                    >
-                        {f}
-                        {f === "all" && ` (${stats.total})`}
-                        {f === "active" && ` (${stats.active})`}
-                        {f === "completed" && ` (${stats.completed})`}
-                    </button>
-                ))}
-            </div>
-
-            {/* Todo List */}
-            <div className="space-y-2">
-                {loadError && (
-                    <ErrorState
-                        title="Todo storage unavailable"
-                        description={loadError}
-                    />
-                )}
-
-                {filtered.length === 0 && (
-                    <EmptyState
-                        title={filter === "all" ? "No todos yet" : `No ${filter} todos`}
-                        description={filter === "all" ? "Add one above to get started." : undefined}
-                    />
-                )}
-
-                {filtered.map((todo, index) => {
-                    const pc = priorityConfig[todo.priority];
-                    return (
-                        <div
-                            key={todo.id}
-                            className={`group flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:border-border-light transition-all duration-200 animate-slide-in-up`}
-                            style={{ animationDelay: `${index * 0.03}s` }}
-                        >
-                            {/* Checkbox */}
-                            <button
-                                onClick={() => toggleTodo(todo.id)}
-                                className="shrink-0 cursor-pointer"
-                                aria-label={todo.completed ? "Mark as incomplete" : "Mark as complete"}
-                            >
-                                {todo.completed ? (
-                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
-                                        <Check className="w-3.5 h-3.5 text-white" />
-                                    </div>
-                                ) : (
-                                    <Circle className="w-6 h-6 text-text-dim hover:text-primary transition-colors duration-200" />
-                                )}
-                            </button>
-
-                            {/* Text */}
-                            <span
-                                className={`flex-1 text-sm transition-colors duration-200 ${todo.completed
-                                        ? "line-through text-text-dim"
-                                        : "text-text"
-                                    }`}
-                            >
-                                {todo.text}
-                            </span>
-
-                            {/* Priority Badge */}
-                            <span
-                                className={`px-2 py-0.5 rounded-md text-xs font-semibold ${pc.bg} ${pc.color} border ${pc.border}`}
-                            >
-                                {pc.label}
-                            </span>
-
-                            {/* Delete */}
-                            <button
-                                onClick={() => deleteTodo(todo.id)}
-                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-danger/10 text-text-dim hover:text-danger transition-all duration-200 cursor-pointer"
-                                aria-label="Delete todo"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
+  return (
+    <div className="min-h-screen bg-bg">
+      <ViewHeader title="Task cua toi" subtitle={`${mine.length} tasks assigned cho ban`} />
+      <div className="mx-auto max-w-4xl p-5 md:p-7">
+        {mine.length === 0 ? (
+          <EmptyState title="Chua co task duoc giao" description="Task moi se hien thi o day." />
+        ) : (
+          <>
+            <TaskSection title="Qua han" items={grouped.overdue} accent="var(--color-danger)" onMarkDone={markDone} onOpenTask={setOpenTask} />
+            <TaskSection title="Dang lam" items={grouped.inProgress} accent="var(--color-primary)" onMarkDone={markDone} onOpenTask={setOpenTask} />
+            <TaskSection title="Can review" items={grouped.review} accent="var(--color-warning)" onMarkDone={markDone} onOpenTask={setOpenTask} />
+            <TaskSection title="Da xong" items={grouped.done} accent="var(--color-success)" onMarkDone={markDone} onOpenTask={setOpenTask} />
+          </>
+        )}
+      </div>
+      <TaskDetailModal task={openTask} onClose={() => setOpenTask(null)} onSave={saveTask} />
+    </div>
+  );
 }

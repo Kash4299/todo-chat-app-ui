@@ -1,302 +1,139 @@
 "use client";
 
-import Image from "next/image";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { EmptyState, ErrorState, LoadingState } from "@/components/StateView";
+import { EmptyState, LoadingState } from "@/components/StateView";
+import { Avatar } from "@/components/workspace-ui";
 import {
-    Send,
-    Hash,
-    Users,
-    Smile,
-    MessageSquare,
-} from "lucide-react";
-
-interface Message {
-    id: string;
-    userId: string;
-    userName: string;
-    userAvatar: string;
-    text: string;
-    timestamp: number;
-    channel: string;
-}
-
-const channels = [
-    { id: "general", label: "General", icon: Hash },
-    { id: "random", label: "Random", icon: Smile },
-    { id: "tech", label: "Tech", icon: MessageSquare },
-    { id: "design", label: "Design", icon: Users },
-];
-
-// Seed messages for a more lively demo
-const seedMessages: Omit<Message, "id">[] = [
-    {
-        userId: "bot-1",
-        userName: "Sarah Chen",
-        userAvatar: "https://ui-avatars.com/api/?name=Sarah+Chen&background=8B5CF6&color=fff&bold=true&size=128",
-        text: "Hey everyone! Welcome to TodoChat 👋",
-        timestamp: Date.now() - 3600000,
-        channel: "general",
-    },
-    {
-        userId: "bot-2",
-        userName: "Alex Rivera",
-        userAvatar: "https://ui-avatars.com/api/?name=Alex+Rivera&background=3B82F6&color=fff&bold=true&size=128",
-        text: "This app looks amazing! Love the dark theme.",
-        timestamp: Date.now() - 3000000,
-        channel: "general",
-    },
-    {
-        userId: "bot-1",
-        userName: "Sarah Chen",
-        userAvatar: "https://ui-avatars.com/api/?name=Sarah+Chen&background=8B5CF6&color=fff&bold=true&size=128",
-        text: "Has anyone tried the new todo priorities? Super handy for organizing tasks.",
-        timestamp: Date.now() - 2400000,
-        channel: "general",
-    },
-    {
-        userId: "bot-3",
-        userName: "Jordan Lee",
-        userAvatar: "https://ui-avatars.com/api/?name=Jordan+Lee&background=EC4899&color=fff&bold=true&size=128",
-        text: "Just deployed a new microservice using Go and gRPC — runs like a dream 🚀",
-        timestamp: Date.now() - 1800000,
-        channel: "tech",
-    },
-    {
-        userId: "bot-2",
-        userName: "Alex Rivera",
-        userAvatar: "https://ui-avatars.com/api/?name=Alex+Rivera&background=3B82F6&color=fff&bold=true&size=128",
-        text: "Anyone else obsessed with the teal + orange color combo? 🎨",
-        timestamp: Date.now() - 1200000,
-        channel: "design",
-    },
-    {
-        userId: "bot-3",
-        userName: "Jordan Lee",
-        userAvatar: "https://ui-avatars.com/api/?name=Jordan+Lee&background=EC4899&color=fff&bold=true&size=128",
-        text: "Friday vibes! What's everyone working on this weekend?",
-        timestamp: Date.now() - 600000,
-        channel: "random",
-    },
-];
+  CHANNELS,
+  DMS,
+  ME_ID,
+  USER_BY_ID,
+  fmtTimeFull,
+  loadMockMessages,
+  saveMockMessages,
+} from "@/lib/mock-workspace";
+import { Hash, Send } from "lucide-react";
 
 export default function ChatPage() {
-    const { user, loading } = useAuth();
-    const [activeChannel, setActiveChannel] = useState("general");
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [input, setInput] = useState("");
-    const [mounted, setMounted] = useState(false);
-    const [loadError, setLoadError] = useState("");
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { loading } = useAuth();
+  const [activeId, setActiveId] = useState<string>("c_general");
+  const [messagesByRoom, setMessagesByRoom] = useState(() => loadMockMessages());
+  const [text, setText] = useState("");
+  const endRef = useRef<HTMLDivElement>(null);
 
-    const storageKey = "todochat_messages";
+  const isDM = activeId.startsWith("d_");
+  const activeChannel = CHANNELS.find((channel) => channel.id === activeId);
+  const activeDM = DMS.find((dm) => dm.id === activeId);
+  const dmUser = activeDM ? USER_BY_ID[activeDM.other_user_id] : null;
 
-    useEffect(() => {
-        const timeout = window.setTimeout(() => {
-            try {
-                const stored = localStorage.getItem(storageKey);
-                if (stored) {
-                    setMessages(JSON.parse(stored));
-                } else {
-                    const seeded = seedMessages.map((m) => ({
-                        ...m,
-                        id: Math.random().toString(36).substring(2),
-                    }));
-                    setMessages(seeded);
-                    localStorage.setItem(storageKey, JSON.stringify(seeded));
-                }
-            } catch {
-                setLoadError("Could not load saved messages.");
-            }
-            setMounted(true);
-        }, 0);
+  const roomMessages = useMemo(() => messagesByRoom[activeId] || [], [messagesByRoom, activeId]);
 
-        return () => window.clearTimeout(timeout);
-    }, []);
-
-    useEffect(() => {
-        if (mounted) {
-            localStorage.setItem(storageKey, JSON.stringify(messages));
-        }
-    }, [messages, mounted]);
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, activeChannel]);
-
-    const channelMessages = useMemo(
-        () => messages.filter((m) => m.channel === activeChannel),
-        [messages, activeChannel]
-    );
-
-    const sendMessage = () => {
-        const trimmed = input.trim();
-        if (!trimmed || !user) return;
-
-        const msg: Message = {
-            id: Date.now().toString(36) + Math.random().toString(36).substring(2),
-            userId: user.id,
-            userName: user.name,
-            userAvatar: user.avatar,
-            text: trimmed,
-            timestamp: Date.now(),
-            channel: activeChannel,
-        };
-
-        setMessages((prev) => [...prev, msg]);
-        setInput("");
+  const send = () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const next = {
+      ...messagesByRoom,
+      [activeId]: [
+        ...(messagesByRoom[activeId] || []),
+        {
+          id: `${Date.now()}`,
+          user_id: ME_ID,
+          content: trimmed,
+          created_at: new Date().toISOString(),
+        },
+      ],
     };
+    setMessagesByRoom(next);
+    saveMockMessages(next);
+    setText("");
+    setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
+  };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    };
+  if (loading) return <LoadingState title="Loading chat" />;
 
-    const formatTime = (ts: number | string) => {
-        const date = new Date(ts);
-        if (isNaN(date.getTime())) return "";
-        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    };
-
-    const getMessageCounts = (channelId: string) => {
-        return messages.filter((m) => m.channel === channelId).length;
-    };
-
-    if (loading || !mounted) {
-        return <LoadingState title="Loading chat" />;
-    }
-
-    return (
-        <div className="flex h-full animate-fade-in relative">
-            {/* Channel Sidebar */}
-            <div className="w-60 bg-bg border-r border-border flex flex-col shrink-0">
-                <div className="p-4 border-b border-border">
-                    <h2 className="text-sm font-bold text-text uppercase tracking-wider">Channels</h2>
-                </div>
-                <div className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-                    {channels.map((ch) => {
-                        const isActive = activeChannel === ch.id;
-                        const count = getMessageCounts(ch.id);
-                        return (
-                            <button
-                                key={ch.id}
-                                onClick={() => setActiveChannel(ch.id)}
-                                className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${isActive
-                                        ? "bg-primary/15 text-primary"
-                                        : "text-text-muted hover:text-text hover:bg-bg-lighter"
-                                    }`}
-                            >
-                                <ch.icon className="w-4 h-4 shrink-0" />
-                                <span className="flex-1 text-left">{ch.label}</span>
-                                {count > 0 && (
-                                    <span
-                                        className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? "bg-primary/20 text-primary" : "bg-bg-lighter text-text-dim"
-                                            }`}
-                                    >
-                                        {count}
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Chat Area */}
-            <div className="flex-1 flex flex-col min-w-0">
-                {/* Channel Header */}
-                <div className="px-6 py-4 border-b border-border bg-surface/50 backdrop-blur-sm flex justify-between items-center">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <Hash className="w-5 h-5 text-primary" />
-                            <h2 className="text-lg font-bold text-text">
-                                {channels.find((c) => c.id === activeChannel)?.label}
-                            </h2>
-                        </div>
-                        <p className="text-xs text-text-dim mt-0.5">
-                            {channelMessages.length} messages
-                        </p>
-                    </div>
-                </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 relative">
-                    {loadError && (
-                        <ErrorState
-                            title="Message storage unavailable"
-                            description={loadError}
-                        />
-                    )}
-
-                    {channelMessages.length === 0 && (
-                        <EmptyState
-                            title="No messages yet"
-                            description={`Be the first to say something in ${channels.find(c => c.id === activeChannel)?.label}.`}
-                        />
-                    )}
-
-                    {channelMessages.map((msg, index) => {
-                        const isOwn = msg.userId === user?.id;
-                        return (
-                            <div
-                                key={msg.id}
-                                className={`flex gap-3 animate-slide-in-up ${isOwn ? "flex-row-reverse" : ""}`}
-                                style={{ animationDelay: `${Math.min(index * 0.02, 0.5)}s` }}
-                            >
-                                <Image
-                                    src={msg.userAvatar}
-                                    alt={msg.userName}
-                                    width={36}
-                                    height={36}
-                                    unoptimized
-                                    className="w-9 h-9 rounded-full shrink-0 ring-2 ring-border mt-0.5 object-cover"
-                                />
-                                <div className={`max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}>
-                                    <div className={`flex items-baseline gap-2 mb-1 ${isOwn ? "flex-row-reverse" : ""}`}>
-                                        <span className="text-sm font-semibold text-text">
-                                            {isOwn ? "You" : msg.userName}
-                                        </span>
-                                        <span className="text-xs text-text-dim">{formatTime(msg.timestamp)}</span>
-                                    </div>
-                                    <div
-                                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isOwn
-                                                ? "bg-gradient-to-r from-primary to-primary-light text-white rounded-tr-md"
-                                                : "bg-surface border border-border text-text rounded-tl-md"
-                                            }`}
-                                    >
-                                        {msg.text}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                    <div ref={messagesEndRef} />
-                </div>
-
-                {/* Message Input */}
-                <div className="p-4 border-t border-border bg-surface/50 backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                        <input
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder={`Message #${channels.find((c) => c.id === activeChannel)?.label.toLowerCase()}...`}
-                            className="flex-1 px-4 py-3 bg-bg-light border border-border rounded-xl text-text placeholder:text-text-dim focus:border-primary focus:ring-1 focus:ring-primary transition-colors duration-200"
-                        />
-                        <button
-                            onClick={sendMessage}
-                            disabled={!input.trim()}
-                            className="p-3 bg-gradient-to-r from-primary to-primary-light text-white rounded-xl hover:shadow-lg hover:shadow-primary/25 active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            <Send className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="flex min-h-screen bg-bg">
+      <aside className="hidden w-64 shrink-0 border-r border-border bg-bg-light md:block">
+        <div className="border-b border-border px-4 py-3 text-xs font-bold uppercase tracking-[0.08em] text-text-dim">Channels</div>
+        <div className="space-y-1 p-2.5">
+          {CHANNELS.map((channel) => (
+            <button
+              key={channel.id}
+              onClick={() => setActiveId(channel.id)}
+              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm ${activeId === channel.id ? "bg-primary/12 font-semibold text-primary" : "text-text-muted hover:bg-surface"}`}
+            >
+              <Hash className="h-3.5 w-3.5" />
+              <span>{channel.name}</span>
+            </button>
+          ))}
         </div>
-    );
+        <div className="border-t border-border px-4 py-3 text-xs font-bold uppercase tracking-[0.08em] text-text-dim">DMs</div>
+        <div className="space-y-1 p-2.5">
+          {DMS.map((dm) => (
+            <button
+              key={dm.id}
+              onClick={() => setActiveId(dm.id)}
+              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm ${activeId === dm.id ? "bg-primary/12 font-semibold text-primary" : "text-text-muted hover:bg-surface"}`}
+            >
+              <Avatar user={USER_BY_ID[dm.other_user_id]} size={18} />
+              <span>{USER_BY_ID[dm.other_user_id].display_name}</span>
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      <section className="flex min-w-0 flex-1 flex-col">
+        <header className="border-b border-border bg-surface px-4 py-3 md:px-6">
+          <h1 className="text-lg font-extrabold text-text">
+            {isDM ? dmUser?.display_name : `#${activeChannel?.name || "general"}`}
+          </h1>
+          <p className="text-xs text-text-dim">{isDM ? dmUser?.email : activeChannel?.topic}</p>
+        </header>
+
+        <div className="flex-1 space-y-1 overflow-y-auto px-4 py-4 md:px-6">
+          {roomMessages.length === 0 ? <EmptyState title="No messages yet" description="Hay gui tin nhan dau tien." /> : null}
+          {roomMessages.map((message) => {
+            const owner = USER_BY_ID[message.user_id];
+            const mine = message.user_id === ME_ID;
+            return (
+              <div key={message.id} className={`flex gap-2.5 ${mine ? "justify-end" : "justify-start"}`}>
+                {!mine ? <Avatar user={owner} size={30} /> : null}
+                <div className={`max-w-[75%] ${mine ? "items-end" : "items-start"}`}>
+                  <div className={`mb-1 flex items-center gap-2 text-xs ${mine ? "justify-end" : "justify-start"}`}>
+                    <span className="font-semibold text-text">{mine ? "Ban" : owner.display_name}</span>
+                    <span className="text-text-dim">{fmtTimeFull(message.created_at)}</span>
+                  </div>
+                  <div className={`rounded-2xl px-3 py-2 text-sm ${mine ? "rounded-tr-md bg-primary text-white" : "rounded-tl-md border border-border bg-surface text-text"}`}>
+                    {message.content}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={endRef} />
+        </div>
+
+        <footer className="border-t border-border bg-surface px-4 py-3 md:px-6">
+          <div className="input-base flex items-center gap-2 px-3 py-2">
+            <input
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  send();
+                }
+              }}
+              placeholder={isDM ? `Nhan tin cho ${dmUser?.display_name || "..."}` : `Nhan tin vao #${activeChannel?.name || "general"}`}
+              className="w-full bg-transparent text-sm outline-none"
+            />
+            <button onClick={send} disabled={!text.trim()} className="btn-base rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50">
+              <span className="inline-flex items-center gap-1"><Send className="h-3.5 w-3.5" /> Gui</span>
+            </button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  );
 }
