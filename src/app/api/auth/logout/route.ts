@@ -1,8 +1,8 @@
+import { BackendApiError, requestLocalAuth } from "@/lib/backend-api";
 import {
-  backendApiUrl,
   clearLocalAuthCookies,
+  clearPendingLinkCookie,
   LOCAL_REFRESH_COOKIE,
-  readBackendError,
 } from "@/lib/backend-auth";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -13,22 +13,17 @@ export async function POST() {
     const refreshToken = cookieStore.get(LOCAL_REFRESH_COOKIE)?.value;
 
     if (refreshToken) {
-      const response = await fetch(backendApiUrl("/auth/logout"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        const error = await readBackendError(response);
-        return NextResponse.json(error, { status: response.status });
-      }
+      await requestLocalAuth("/auth/logout", { refresh_token: refreshToken });
     }
 
     clearLocalAuthCookies(cookieStore);
+    clearPendingLinkCookie(cookieStore);
     return NextResponse.json({ message: "logged out" });
   } catch (error) {
+    if (error instanceof BackendApiError) {
+      return NextResponse.json(error.payload, { status: error.status });
+    }
+
     const message = error instanceof Error ? error.message : "logout failed";
     const status = message.includes(" is required") ? 500 : 400;
 

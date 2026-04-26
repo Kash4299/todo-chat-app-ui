@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { EmptyState, ErrorState, LoadingState } from "@/components/StateView";
 import {
     Send,
     Hash,
@@ -80,33 +82,37 @@ const seedMessages: Omit<Message, "id">[] = [
 ];
 
 export default function ChatPage() {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const [activeChannel, setActiveChannel] = useState("general");
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [mounted, setMounted] = useState(false);
+    const [loadError, setLoadError] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const storageKey = "todochat_messages";
 
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(storageKey);
-            if (stored) {
-                setMessages(JSON.parse(stored));
-            } else {
-                // Initialize with seed messages
-                const seeded = seedMessages.map((m) => ({
-                    ...m,
-                    id: Math.random().toString(36).substring(2),
-                }));
-                setMessages(seeded);
-                localStorage.setItem(storageKey, JSON.stringify(seeded));
+        const timeout = window.setTimeout(() => {
+            try {
+                const stored = localStorage.getItem(storageKey);
+                if (stored) {
+                    setMessages(JSON.parse(stored));
+                } else {
+                    const seeded = seedMessages.map((m) => ({
+                        ...m,
+                        id: Math.random().toString(36).substring(2),
+                    }));
+                    setMessages(seeded);
+                    localStorage.setItem(storageKey, JSON.stringify(seeded));
+                }
+            } catch {
+                setLoadError("Could not load saved messages.");
             }
-        } catch {
-            // ignore
-        }
-        setMounted(true);
+            setMounted(true);
+        }, 0);
+
+        return () => window.clearTimeout(timeout);
     }, []);
 
     useEffect(() => {
@@ -159,7 +165,9 @@ export default function ChatPage() {
         return messages.filter((m) => m.channel === channelId).length;
     };
 
-    if (!mounted) return null;
+    if (loading || !mounted) {
+        return <LoadingState title="Loading chat" />;
+    }
 
     return (
         <div className="flex h-full animate-fade-in relative">
@@ -216,14 +224,18 @@ export default function ChatPage() {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 relative">
+                    {loadError && (
+                        <ErrorState
+                            title="Message storage unavailable"
+                            description={loadError}
+                        />
+                    )}
+
                     {channelMessages.length === 0 && (
-                        <div className="text-center py-20">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-bg-lighter flex items-center justify-center">
-                                <MessageSquare className="w-8 h-8 text-text-dim" />
-                            </div>
-                            <p className="text-text-muted font-medium">No messages yet</p>
-                            <p className="text-text-dim text-sm mt-1">Be the first to say something in {channels.find(c => c.id === activeChannel)?.label}!</p>
-                        </div>
+                        <EmptyState
+                            title="No messages yet"
+                            description={`Be the first to say something in ${channels.find(c => c.id === activeChannel)?.label}.`}
+                        />
                     )}
 
                     {channelMessages.map((msg, index) => {
@@ -234,9 +246,12 @@ export default function ChatPage() {
                                 className={`flex gap-3 animate-slide-in-up ${isOwn ? "flex-row-reverse" : ""}`}
                                 style={{ animationDelay: `${Math.min(index * 0.02, 0.5)}s` }}
                             >
-                                <img
+                                <Image
                                     src={msg.userAvatar}
                                     alt={msg.userName}
+                                    width={36}
+                                    height={36}
+                                    unoptimized
                                     className="w-9 h-9 rounded-full shrink-0 ring-2 ring-border mt-0.5 object-cover"
                                 />
                                 <div className={`max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}>

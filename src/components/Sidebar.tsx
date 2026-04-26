@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -106,9 +107,12 @@ export default function Sidebar() {
                         <div
                             className={`flex items-center gap-3 mb-3 px-3 py-2 ${collapsed ? "justify-center" : ""}`}
                         >
-                            <img
+                            <Image
                                 src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`}
                                 alt={user.name || "User"}
+                                width={36}
+                                height={36}
+                                unoptimized
                                 className="w-9 h-9 rounded-full shrink-0 ring-2 ring-border"
                             />
                             {!collapsed && (

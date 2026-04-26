@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { EmptyState, ErrorState, LoadingState } from "@/components/StateView";
 import {
     Plus,
     Trash2,
@@ -30,27 +31,34 @@ const priorityConfig = {
 };
 
 export default function TodosPage() {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const [todos, setTodos] = useState<Todo[]>([]);
     const [input, setInput] = useState("");
     const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
     const [filter, setFilter] = useState<Filter>("all");
     const [mounted, setMounted] = useState(false);
+    const [loadError, setLoadError] = useState("");
 
-    const storageKey = `todochat_todos_${user?.id}`;
+    const storageKey = user?.id ? `todochat_todos_${user.id}` : "";
 
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(storageKey);
-            if (stored) setTodos(JSON.parse(stored));
-        } catch {
-            // ignore
-        }
-        setMounted(true);
+        if (!storageKey) return;
+
+        const timeout = window.setTimeout(() => {
+            try {
+                const stored = localStorage.getItem(storageKey);
+                if (stored) setTodos(JSON.parse(stored));
+            } catch {
+                setLoadError("Could not load saved todos.");
+            }
+            setMounted(true);
+        }, 0);
+
+        return () => window.clearTimeout(timeout);
     }, [storageKey]);
 
     useEffect(() => {
-        if (mounted) {
+        if (mounted && storageKey) {
             localStorage.setItem(storageKey, JSON.stringify(todos));
         }
     }, [todos, storageKey, mounted]);
@@ -103,7 +111,9 @@ export default function TodosPage() {
         if (e.key === "Enter") addTodo();
     };
 
-    if (!mounted) return null;
+    if (loading || !mounted) {
+        return <LoadingState title="Loading todos" />;
+    }
 
     return (
         <div className="p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in">
@@ -203,15 +213,18 @@ export default function TodosPage() {
 
             {/* Todo List */}
             <div className="space-y-2">
+                {loadError && (
+                    <ErrorState
+                        title="Todo storage unavailable"
+                        description={loadError}
+                    />
+                )}
+
                 {filtered.length === 0 && (
-                    <div className="text-center py-16">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-bg-lighter flex items-center justify-center">
-                            <Check className="w-8 h-8 text-text-dim" />
-                        </div>
-                        <p className="text-text-muted font-medium">
-                            {filter === "all" ? "No todos yet — add one above!" : `No ${filter} todos`}
-                        </p>
-                    </div>
+                    <EmptyState
+                        title={filter === "all" ? "No todos yet" : `No ${filter} todos`}
+                        description={filter === "all" ? "Add one above to get started." : undefined}
+                    />
                 )}
 
                 {filtered.map((todo, index) => {

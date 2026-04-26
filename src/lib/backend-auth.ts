@@ -1,7 +1,9 @@
 import type { AuthUser } from "@/lib/auth-types";
+import { getRequiredEnv } from "@/lib/env";
 
 export const LOCAL_ACCESS_COOKIE = "todochat_access_token";
 export const LOCAL_REFRESH_COOKIE = "todochat_refresh_token";
+export const PENDING_LINK_COOKIE = "todochat_pending_link_token";
 
 export interface BackendUser {
   id: string;
@@ -45,12 +47,7 @@ interface MutableCookieStore {
 }
 
 export function backendApiUrl(path: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-  if (!baseUrl) {
-    throw new Error("NEXT_PUBLIC_API_URL is required");
-  }
-
+  const baseUrl = getRequiredEnv("NEXT_PUBLIC_API_URL");
   const trimmed = baseUrl.replace(/\/+$/, "");
   const apiBase = trimmed.endsWith("/api/v1")
     ? trimmed
@@ -62,11 +59,7 @@ export function backendApiUrl(path: string) {
 }
 
 export function auth0Audience() {
-  if (!process.env.AUTH0_AUDIENCE) {
-    throw new Error("AUTH0_AUDIENCE is required");
-  }
-
-  return process.env.AUTH0_AUDIENCE;
+  return getRequiredEnv("AUTH0_AUDIENCE");
 }
 
 export function toAuthUser(user: BackendUser): AuthUser {
@@ -115,4 +108,20 @@ export function setLocalAuthCookies(
 export function clearLocalAuthCookies(cookieStore: MutableCookieStore) {
   cookieStore.delete(LOCAL_ACCESS_COOKIE);
   cookieStore.delete(LOCAL_REFRESH_COOKIE);
+}
+
+export function setPendingLinkCookie(cookieStore: MutableCookieStore, pendingToken: string) {
+  const secure = process.env.NODE_ENV === "production";
+
+  cookieStore.set(PENDING_LINK_COOKIE, pendingToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    maxAge: 10 * 60,
+  });
+}
+
+export function clearPendingLinkCookie(cookieStore: MutableCookieStore) {
+  cookieStore.delete(PENDING_LINK_COOKIE);
 }
