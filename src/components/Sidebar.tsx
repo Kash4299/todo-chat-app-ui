@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspace } from "@/context/WorkspaceContext";
 import {
   Bell,
   Calendar,
@@ -49,6 +50,7 @@ export default function Sidebar() {
   const [passwordLoading, setPasswordLoading] = useState(false);
 
   const active = useMemo(() => navItems.find((item) => pathname === item.href)?.href, [pathname]);
+  const { workspace } = useWorkspace();
 
   const addPassword = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -76,8 +78,8 @@ export default function Sidebar() {
     <aside className="flex h-screen w-[300px] shrink-0 flex-col border-r border-border bg-bg-light">
       <div className="border-b border-border px-4 py-4">
         <div className="mb-3 rounded-xl border border-border bg-surface px-3 py-3">
-          <p className="text-sm font-extrabold text-text">KashFlow Studio</p>
-          <p className="text-xs text-text-dim">24 thanh vien</p>
+          <p className="text-sm font-extrabold text-text">{workspace?.name ?? "KashFlow"}</p>
+          <p className="text-xs text-text-dim">{workspace ? `kashflow.vn/${workspace.slug}` : "Chưa chọn workspace"}</p>
         </div>
         <a href="/search" className="flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-2 text-xs text-text-dim hover:bg-bg-lighter">
           Tim kiem nhanh

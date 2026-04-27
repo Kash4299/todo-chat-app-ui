@@ -15,6 +15,15 @@ import {
 } from "@/lib/backend-auth";
 import { cookies } from "next/headers";
 
+export interface BackendWorkspace {
+  id: string;
+  name: string;
+  slug: string;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BackendTask {
   id: string;
   workspace_id: string;
@@ -66,7 +75,10 @@ async function requestBackend<T>(
     throw new BackendApiError(response.status, await readBackendError(response));
   }
 
-  return (await response.json()) as T;
+  if (response.status === 204) return undefined as T;
+
+  const json = (await response.json()) as { data: T };
+  return json.data;
 }
 
 export async function requestLocalAuth(
@@ -165,6 +177,28 @@ export async function requestProtectedBackend<T>(
 
 export function getMe() {
   return requestProtectedBackend<BackendUser>("/users/me");
+}
+
+export function getWorkspaces() {
+  return requestProtectedBackend<BackendWorkspace[]>("/workspaces");
+}
+
+export function getWorkspace(id: string) {
+  return requestProtectedBackend<BackendWorkspace>(`/workspaces/${id}`);
+}
+
+export function createWorkspace(input: { name: string }) {
+  return requestProtectedBackend<BackendWorkspace>("/workspaces", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteWorkspace(id: string) {
+  return requestProtectedBackend<void>(`/workspaces/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export function createTask(input: CreateTaskRequest) {

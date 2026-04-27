@@ -3,13 +3,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const payload = await requestProtectedBackend<{ message: string }>("/users/me/password", {
+    await requestProtectedBackend<void>("/users/me/password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(await request.json()),
     });
 
-    return NextResponse.json(payload);
+    return NextResponse.json({ message: "Password set successfully" });
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(error.payload, { status: error.status });

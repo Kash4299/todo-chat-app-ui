@@ -36,7 +36,12 @@ export default function AuthCard() {
     });
 
     if (response.ok) {
-      window.location.href = "/home";
+      if (isRegister) {
+        window.location.href = "/onboarding";
+      } else {
+        const hasWorkspace = localStorage.getItem("kashflow_active_workspace");
+        window.location.href = hasWorkspace ? "/home" : "/onboarding";
+      }
       return;
     }
 

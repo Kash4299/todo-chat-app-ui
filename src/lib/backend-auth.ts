@@ -17,8 +17,9 @@ export interface BackendUser {
 }
 
 export interface BackendError {
-  error?: string;
   code?: string;
+  error?: string;
+  [key: string]: unknown;
 }
 
 export interface TokenPair {
@@ -77,7 +78,13 @@ export function toAuthUser(user: BackendUser): AuthUser {
 
 export async function readBackendError(response: Response): Promise<BackendError> {
   try {
-    return (await response.json()) as BackendError;
+    const json = await response.json();
+    // BE format: { "error": { "code": "SNAKE_CODE", "message": "human readable", ...extra } }
+    if (json?.error && typeof json.error === "object") {
+      const { message, ...rest } = json.error as Record<string, unknown>;
+      return { error: message as string | undefined, ...rest };
+    }
+    return json as BackendError;
   } catch {
     return { error: response.statusText || "backend request failed" };
   }
