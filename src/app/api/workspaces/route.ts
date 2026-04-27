@@ -1,10 +1,18 @@
 import { BackendApiError, createWorkspace, getWorkspaces } from "@/lib/backend-api";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const workspaces = await getWorkspaces();
-    return NextResponse.json(workspaces);
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get("page");
+    const page_size = searchParams.get("page_size");
+
+    const result = await getWorkspaces({
+      ...(page ? { page: Number(page) } : {}),
+      ...(page_size ? { page_size: Number(page_size) } : {}),
+    });
+
+    return NextResponse.json(result);
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(error.payload, { status: error.status });

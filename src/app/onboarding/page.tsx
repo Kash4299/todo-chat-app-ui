@@ -10,6 +10,10 @@ interface Workspace {
   owner_id: string;
 }
 
+interface WorkspaceListResponse {
+  data?: Workspace[];
+}
+
 type Mode = "pick" | "create";
 
 function workspaceInitial(name: string) {
@@ -39,10 +43,11 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     fetch("/api/workspaces")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: Workspace[]) => {
-        setWorkspaces(data);
-        setMode(data.length === 0 ? "create" : "pick");
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload: WorkspaceListResponse | null) => {
+        const list = Array.isArray(payload?.data) ? payload.data : [];
+        setWorkspaces(list);
+        setMode(list.length === 0 ? "create" : "pick");
       })
       .catch(() => setMode("create"))
       .finally(() => setFetching(false));
@@ -50,7 +55,7 @@ export default function OnboardingPage() {
 
   const pickWorkspace = (w: Workspace) => {
     try { localStorage.setItem("kashflow_active_workspace", JSON.stringify(w)); } catch {}
-    window.location.href = "/home";
+    window.location.assign("/home");
   };
 
   const createNew = async (event: React.FormEvent) => {

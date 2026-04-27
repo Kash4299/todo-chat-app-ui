@@ -15,6 +15,18 @@ import {
 } from "@/lib/backend-auth";
 import { cookies } from "next/headers";
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: PaginationMeta;
+}
+
 export interface BackendWorkspace {
   id: string;
   name: string;
@@ -79,6 +91,59 @@ async function requestBackend<T>(
 
   const json = (await response.json()) as { data: T };
   return json.data;
+}
+
+async function requestBackendList<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<PaginatedResponse<T>> {
+  const response = await fetch(backendApiUrl(path), {
+    ...init,
+    headers: {
+      Accept: "application/json",
+      ...init.headers,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new BackendApiError(response.status, await readBackendError(response));
+  }
+
+  return (await response.json()) as PaginatedResponse<T>;
+}
+
+async function requestProtectedBackendList<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<PaginatedResponse<T>> {
+  const cookieStore = await cookies();
+  const localRefreshToken = cookieStore.get(LOCAL_REFRESH_COOKIE)?.value;
+  let token = await getBackendAccessToken();
+
+  const authInit: RequestInit = {
+    ...init,
+    headers: { ...init.headers, Authorization: `Bearer ${token}` },
+  };
+
+  try {
+    return await requestBackendList<T>(path, authInit);
+  } catch (error) {
+    if (!(error instanceof BackendApiError) || error.status !== 401 || !localRefreshToken) {
+      throw error;
+    }
+
+    const tokens = await refreshLocalToken(localRefreshToken);
+    if (!tokens) throw error;
+
+    setLocalAuthCookies(cookieStore, tokens);
+    token = tokens.access_token;
+
+    return requestBackendList<T>(path, {
+      ...init,
+      headers: { ...init.headers, Authorization: `Bearer ${token}` },
+    });
+  }
 }
 
 export async function requestLocalAuth(
@@ -179,8 +244,12 @@ export function getMe() {
   return requestProtectedBackend<BackendUser>("/users/me");
 }
 
-export function getWorkspaces() {
-  return requestProtectedBackend<BackendWorkspace[]>("/workspaces");
+export function getWorkspaces(params: { page?: number; page_size?: number } = {}) {
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.page_size) qs.set("page_size", String(params.page_size));
+  const query = qs.toString();
+  return requestProtectedBackendList<BackendWorkspace>(`/workspaces${query ? `?${query}` : ""}`);
 }
 
 export function getWorkspace(id: string) {
