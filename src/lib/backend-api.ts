@@ -150,6 +150,8 @@ export async function requestLocalAuth(
   path:
     | "/auth/login"
     | "/auth/register"
+    | "/auth/verify-email"
+    | "/auth/resend-verification"
     | "/auth/refresh"
     | "/auth/logout"
     | "/auth/link/confirm",

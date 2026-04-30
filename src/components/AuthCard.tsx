@@ -7,6 +7,11 @@ type Mode = "login" | "register";
 
 interface AuthError {
   error?: string;
+  code?: string;
+}
+
+interface InfoPayload {
+  message?: string;
 }
 
 export default function AuthCard() {
@@ -16,44 +21,83 @@ export default function AuthCard() {
   const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const isRegister = mode === "register";
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+    setInfo("");
     setLoading(true);
-
-    const response = await fetch(`/api/auth/${mode}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        ...(isRegister ? { display_name: displayName } : {}),
-      }),
-    });
-
-    if (response.ok) {
-      if (isRegister) {
-        window.location.href = "/onboarding";
-      } else {
-        const hasWorkspace = localStorage.getItem("kashflow_active_workspace");
-        window.location.href = hasWorkspace ? "/home" : "/onboarding";
-      }
-      return;
-    }
-
-    let payload: AuthError = {};
     try {
-      payload = (await response.json()) as AuthError;
-    } catch {
-      // No-op: keep deterministic fallback.
-    }
+      const response = await fetch(`/api/auth/${mode}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          ...(isRegister ? { display_name: displayName } : {}),
+        }),
+      });
 
-    setError(payload.error || "Authentication failed");
-    setLoading(false);
+      if (response.ok) {
+        if (isRegister) {
+          const encodedEmail = encodeURIComponent(email.trim());
+          window.location.href = `/verify-email?email=${encodedEmail}`;
+        } else {
+          const hasWorkspace = localStorage.getItem("kashflow_active_workspace");
+          window.location.href = hasWorkspace ? "/home" : "/onboarding";
+        }
+        return;
+      }
+
+      let payload: AuthError = {};
+      try {
+        payload = (await response.json()) as AuthError;
+      } catch {
+        // No-op: keep deterministic fallback.
+      }
+
+      if (payload.code === "EMAIL_NOT_VERIFIED") {
+        setError("Email chưa được xác minh. Vui lòng kiểm tra inbox để xác minh trước khi đăng nhập.");
+      } else {
+        setError(payload.error || "Authentication failed");
+      }
+    } catch {
+      setError("Không thể kết nối. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    if (!email.trim() || resending) return;
+
+    setResending(true);
+    setError("");
+    setInfo("");
+
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as AuthError & InfoPayload;
+      if (response.ok) {
+        setInfo(payload.message || "Đã gửi lại email xác minh. Vui lòng kiểm tra inbox.");
+      } else {
+        setError(payload.error || "Không thể gửi lại email xác minh");
+      }
+    } catch {
+      setError("Không thể kết nối. Vui lòng thử lại.");
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -68,6 +112,7 @@ export default function AuthCard() {
             type="button"
             onClick={() => {
               setError("");
+              setInfo("");
               setMode(isRegister ? "login" : "register");
             }}
             className="cursor-pointer font-semibold text-primary hover:underline"
@@ -146,6 +191,23 @@ export default function AuthCard() {
           <p className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
             {error}
           </p>
+        )}
+
+        {info && (
+          <p className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary-dark">
+            {info}
+          </p>
+        )}
+
+        {!isRegister && error.includes("Email chưa được xác minh") && (
+          <button
+            type="button"
+            disabled={resending}
+            onClick={resendVerification}
+            className="btn-base w-full rounded-xl border border-border bg-bg-light px-4 py-2.5 text-sm font-semibold text-text hover:bg-bg-lighter disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {resending ? "Đang gửi lại..." : "Gửi lại email xác minh"}
+          </button>
         )}
 
         <button
