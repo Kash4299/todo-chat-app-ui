@@ -125,7 +125,7 @@ export default function Sidebar() {
               </div>
             </div>
 
-            {showPasswordForm ? (
+            {user.canSetPassword && showPasswordForm ? (
               <form onSubmit={addPassword} className="space-y-2">
                 <input
                   value={password}
@@ -154,7 +154,7 @@ export default function Sidebar() {
                   </button>
                 </div>
               </form>
-            ) : (
+            ) : user.canSetPassword ? (
               <button
                 onClick={() => setShowPasswordForm(true)}
                 className="btn-base flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface"
@@ -162,7 +162,7 @@ export default function Sidebar() {
                 <KeyRound className="h-4 w-4" />
                 Add password
               </button>
-            )}
+            ) : null}
           </div>
         ) : null}
 

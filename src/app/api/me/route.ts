@@ -1,6 +1,8 @@
 import { BackendApiError, getMe } from "@/lib/backend-api";
 import {
   clearPendingLinkCookie,
+  LOCAL_ACCESS_COOKIE,
+  LOCAL_REFRESH_COOKIE,
   setPendingLinkCookie,
   toAuthUser,
 } from "@/lib/backend-auth";
@@ -11,9 +13,16 @@ export async function GET() {
   const cookieStore = await cookies();
 
   try {
+    const hasLocalSession = Boolean(
+      cookieStore.get(LOCAL_ACCESS_COOKIE)?.value ||
+      cookieStore.get(LOCAL_REFRESH_COOKIE)?.value,
+    );
     const user = await getMe();
     clearPendingLinkCookie(cookieStore);
-    return NextResponse.json(toAuthUser(user));
+    return NextResponse.json({
+      ...toAuthUser(user),
+      canSetPassword: !hasLocalSession,
+    });
   } catch (error) {
     if (error instanceof BackendApiError) {
       if (error.status === 409 && error.payload.code === "ACCOUNT_LINK_REQUIRED") {

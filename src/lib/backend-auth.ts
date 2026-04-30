@@ -73,6 +73,7 @@ export function toAuthUser(user: BackendUser): AuthUser {
     isActive: user.is_active,
     createdAt: user.created_at,
     updatedAt: user.updated_at,
+    canSetPassword: false,
   };
 }
 

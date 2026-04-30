@@ -7,4 +7,5 @@ export interface AuthUser {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  canSetPassword: boolean;
 }
