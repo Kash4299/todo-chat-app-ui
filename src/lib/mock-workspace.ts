@@ -88,7 +88,7 @@ function initials(name: string) {
 }
 
 const baseUsers = [
-  { id: "u_me", email: "minh.an@kashflow.vn", display_name: "Minh An", status_text: "Đang code feature mới", presence: "online" as const },
+  { id: "u_me", email: "ba.duy@kashflow.vn", display_name: "Ba Duy", status_text: "Đang code feature mới", presence: "online" as const },
   { id: "u_huy", email: "huy.tran@kashflow.vn", display_name: "Huy Trần", status_text: "Heads-down design review", presence: "busy" as const },
   { id: "u_lan", email: "lan.pham@kashflow.vn", display_name: "Lan Phạm", status_text: "Đi họp khách hàng", presence: "away" as const },
   { id: "u_tuan", email: "tuan.le@kashflow.vn", display_name: "Tuấn Lê", status_text: "", presence: "online" as const },

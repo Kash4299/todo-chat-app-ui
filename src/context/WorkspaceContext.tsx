@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
 import type { BackendWorkspace } from "@/lib/backend-api";
 
 interface WorkspaceContextValue {
@@ -13,6 +13,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 const STORAGE_KEY = "kashflow_active_workspace";
 const STORAGE_EVENT = "kashflow_workspace_changed";
+const PENDING_WORKSPACE_KEY = "kashflow_pending_workspace_id";
 
 let cachedRawWorkspace: string | null = null;
 let cachedWorkspace: BackendWorkspace | null = null;
@@ -64,6 +65,49 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       window.dispatchEvent(new Event(STORAGE_EVENT));
     } catch {}
   };
+
+  useEffect(() => {
+    if (workspace) return;
+
+    const pendingWorkspaceID = localStorage.getItem(PENDING_WORKSPACE_KEY);
+    if (!pendingWorkspaceID) return;
+
+    let cancelled = false;
+
+    const bootstrapWorkspace = async () => {
+      try {
+        const detailResponse = await fetch(`/api/workspaces/${pendingWorkspaceID}`);
+        if (detailResponse.ok) {
+          const detail = (await detailResponse.json()) as BackendWorkspace;
+          if (!cancelled) {
+            setWorkspace(detail);
+            localStorage.removeItem(PENDING_WORKSPACE_KEY);
+          }
+          return;
+        }
+
+        const listResponse = await fetch("/api/workspaces?page=1&page_size=20");
+        if (!listResponse.ok) return;
+
+        const listPayload = (await listResponse.json()) as {
+          data?: BackendWorkspace[];
+        };
+        const fallback = Array.isArray(listPayload.data) ? listPayload.data[0] : null;
+        if (fallback && !cancelled) {
+          setWorkspace(fallback);
+          localStorage.removeItem(PENDING_WORKSPACE_KEY);
+        }
+      } catch {
+        // Keep silent; next page load can retry bootstrap.
+      }
+    };
+
+    bootstrapWorkspace().catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace]);
 
   const clearWorkspace = () => {
     try {

@@ -31,7 +31,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <ViewHeader title="Chao Minh An" subtitle="Tong quan workspace hom nay" />
+      <ViewHeader title="Chao Ba Duy" subtitle="Tong quan workspace hom nay" />
 
       <div className="mx-auto grid max-w-6xl gap-4 p-5 md:grid-cols-3 md:p-7">
         <article className="card-base p-4">

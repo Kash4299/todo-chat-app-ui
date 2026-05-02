@@ -36,6 +36,18 @@ export interface BackendWorkspace {
   updated_at: string;
 }
 
+export interface BackendWorkspaceInvitation {
+  id: string;
+  workspace_id: string;
+  email: string;
+  token: string;
+  invited_by: string;
+  expires_at: string;
+  used_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BackendTask {
   id: string;
   workspace_id: string;
@@ -269,6 +281,34 @@ export function createWorkspace(input: { name: string }) {
 export function deleteWorkspace(id: string) {
   return requestProtectedBackend<void>(`/workspaces/${id}`, {
     method: "DELETE",
+  });
+}
+
+export function inviteWorkspaceMember(workspaceID: string, email: string) {
+  return requestProtectedBackend<{ message: string }>(`/workspaces/${workspaceID}/invitations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resendWorkspaceInvitation(workspaceID: string, email: string) {
+  return requestProtectedBackend<{ message: string }>(`/workspaces/${workspaceID}/invitations/resend`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function getWorkspaceInvitations(workspaceID: string) {
+  return requestProtectedBackend<BackendWorkspaceInvitation[]>(`/workspaces/${workspaceID}/invitations`);
+}
+
+export function acceptWorkspaceInvitation(token: string) {
+  return requestProtectedBackend<{ workspace_id: string }>("/invitations/accept", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
   });
 }
 
