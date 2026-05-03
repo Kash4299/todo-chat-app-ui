@@ -1,4 +1,4 @@
-import { BackendApiError, getMe } from "@/lib/backend-api";
+import { BackendApiError, getMe, updateMeProfile } from "@/lib/backend-api";
 import {
   clearPendingLinkCookie,
   LOCAL_ACCESS_COOKIE,
@@ -45,5 +45,29 @@ export async function GET() {
     const status = message.includes(" is required") ? 500 : 401;
 
     return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = (await request.json()) as {
+      display_name?: string;
+      avatar_url?: string;
+      status_text?: string;
+    };
+
+    const user = await updateMeProfile({
+      display_name: body.display_name ?? "",
+      ...(body.avatar_url !== undefined ? { avatar_url: body.avatar_url } : {}),
+      ...(body.status_text !== undefined ? { status_text: body.status_text } : {}),
+    });
+
+    return NextResponse.json(toAuthUser(user));
+  } catch (error) {
+    if (error instanceof BackendApiError) {
+      return NextResponse.json(error.payload, { status: error.status });
+    }
+
+    return NextResponse.json({ error: "failed to update profile" }, { status: 500 });
   }
 }

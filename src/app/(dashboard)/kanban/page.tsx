@@ -1,24 +1,47 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspace } from "@/context/WorkspaceContext";
 import { LoadingState } from "@/components/StateView";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { TaskCard, ViewHeader } from "@/components/workspace-ui";
-import { type MockTask, type MockTaskStatus, loadMockTasks, saveMockTasks, USER_BY_ID } from "@/lib/mock-workspace";
+import { type MockTask, type MockTaskStatus, USER_BY_ID } from "@/lib/mock-workspace";
+import type { BackendTask } from "@/lib/backend-api";
+import { toTaskView } from "@/lib/task-view";
 
 const STATUSES: Array<{ id: MockTaskStatus; label: string }> = [
   { id: "TODO", label: "Can lam" },
   { id: "IN_PROGRESS", label: "Dang lam" },
-  { id: "REVIEW", label: "Dang review" },
   { id: "DONE", label: "Da xong" },
 ];
 
 export default function KanbanPage() {
   const { loading } = useAuth();
-  const [tasks, setTasks] = useState<MockTask[]>(() => loadMockTasks());
+  const { workspace } = useWorkspace();
+  const [tasks, setTasks] = useState<MockTask[]>([]);
   const [dragging, setDragging] = useState<string | null>(null);
   const [openTask, setOpenTask] = useState<MockTask | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!workspace) {
+        setTasks([]);
+        return;
+      }
+      const response = await fetch(`/api/tasks?workspace_id=${workspace.id}&page=1&page_size=100`);
+      if (!response.ok) return;
+      const payload = (await response.json()) as { data: BackendTask[] };
+      const backendTasks = payload.data ?? [];
+      if (cancelled) return;
+      setTasks(backendTasks.map(toTaskView));
+    };
+    load().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace]);
 
   const grouped = useMemo(() => {
     return STATUSES.reduce<Record<MockTaskStatus, MockTask[]>>((acc, status) => {
@@ -27,19 +50,35 @@ export default function KanbanPage() {
     }, { TODO: [], IN_PROGRESS: [], REVIEW: [], DONE: [] });
   }, [tasks]);
 
-  const persist = (next: MockTask[]) => {
-    setTasks(next);
-    saveMockTasks(next);
-  };
-
-  const onDropTo = (status: MockTaskStatus) => {
+  const onDropTo = async (status: "TODO" | "IN_PROGRESS" | "DONE") => {
     if (!dragging) return;
-    persist(tasks.map((task) => (task.id === dragging ? { ...task, status } : task)));
+    const previous = tasks;
+    setTasks(tasks.map((task) => (task.id === dragging ? { ...task, status } : task)));
+    const response = await fetch(`/api/tasks/${dragging}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!response.ok) {
+      setTasks(previous);
+    }
     setDragging(null);
   };
 
-  const saveTask = (nextTask: MockTask) => {
-    persist(tasks.map((task) => (task.id === nextTask.id ? nextTask : task)));
+  const saveTask = async (nextTask: MockTask) => {
+    const response = await fetch(`/api/tasks/${nextTask.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: nextTask.description,
+        status: nextTask.status === "DONE" ? "DONE" : nextTask.status === "IN_PROGRESS" ? "IN_PROGRESS" : "TODO",
+        priority: nextTask.priority,
+        due_date: nextTask.due_date ? new Date(`${nextTask.due_date}T00:00:00.000Z`).toISOString() : undefined,
+      }),
+    });
+    if (!response.ok) return false;
+    setTasks(tasks.map((task) => (task.id === nextTask.id ? nextTask : task)));
+    return true;
   };
 
   if (loading) return <LoadingState title="Loading kanban" />;

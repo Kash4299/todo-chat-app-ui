@@ -1,19 +1,43 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspace } from "@/context/WorkspaceContext";
 import { LoadingState } from "@/components/StateView";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { PriorityBadge, StatusBadge, ViewHeader } from "@/components/workspace-ui";
-import { type MockTask, USER_BY_ID, loadMockTasks, saveMockTasks } from "@/lib/mock-workspace";
+import { type MockTask, USER_BY_ID } from "@/lib/mock-workspace";
+import type { BackendTask } from "@/lib/backend-api";
+import { toTaskView } from "@/lib/task-view";
 
 type SortKey = "id" | "title" | "status" | "priority" | "due_date";
 
 export default function ListPage() {
   const { loading } = useAuth();
-  const [tasks, setTasks] = useState(() => loadMockTasks());
+  const { workspace } = useWorkspace();
+  const [tasks, setTasks] = useState<MockTask[]>([]);
   const [openTask, setOpenTask] = useState<MockTask | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "due_date", dir: "asc" });
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!workspace) {
+        setTasks([]);
+        return;
+      }
+      const response = await fetch(`/api/tasks?workspace_id=${workspace.id}&page=1&page_size=100`);
+      if (!response.ok) return;
+      const payload = (await response.json()) as { data: BackendTask[] };
+      const backendTasks = payload.data ?? [];
+      if (cancelled) return;
+      setTasks(backendTasks.map(toTaskView));
+    };
+    load().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace]);
 
   const sorted = useMemo(() => {
     const arr = [...tasks];
@@ -35,10 +59,20 @@ export default function ListPage() {
     </th>
   );
 
-  const saveTask = (nextTask: MockTask) => {
-    const next = tasks.map((task) => (task.id === nextTask.id ? nextTask : task));
-    setTasks(next);
-    saveMockTasks(next);
+  const saveTask = async (nextTask: MockTask) => {
+    const response = await fetch(`/api/tasks/${nextTask.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: nextTask.description,
+        status: nextTask.status === "DONE" ? "DONE" : nextTask.status === "IN_PROGRESS" ? "IN_PROGRESS" : "TODO",
+        priority: nextTask.priority,
+        due_date: nextTask.due_date ? new Date(`${nextTask.due_date}T00:00:00.000Z`).toISOString() : undefined,
+      }),
+    });
+    if (!response.ok) return false;
+    setTasks(tasks.map((task) => (task.id === nextTask.id ? nextTask : task)));
+    return true;
   };
 
   if (loading) return <LoadingState title="Loading task list" />;

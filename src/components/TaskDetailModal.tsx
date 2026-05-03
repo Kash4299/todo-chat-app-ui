@@ -11,9 +11,10 @@ export default function TaskDetailModal({
 }: {
   task: MockTask | null;
   onClose: () => void;
-  onSave: (task: MockTask) => void;
+  onSave: (task: MockTask) => Promise<boolean> | boolean;
 }) {
   const [draft, setDraft] = useState<MockTask | null>(task);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setDraft(task);
@@ -53,7 +54,7 @@ export default function TaskDetailModal({
                 onChange={(event) => setDraft({ ...draft, status: event.target.value as MockTaskStatus })}
                 className="input-base w-full px-3 py-2 text-sm"
               >
-                {(["TODO", "IN_PROGRESS", "REVIEW", "DONE"] as MockTaskStatus[]).map((status) => (
+                {(["TODO", "IN_PROGRESS", "DONE"] as MockTaskStatus[]).map((status) => (
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
@@ -98,13 +99,17 @@ export default function TaskDetailModal({
             Cancel
           </button>
           <button
-            onClick={() => {
-              onSave(draft);
-              onClose();
+            onClick={async () => {
+              if (saving) return;
+              setSaving(true);
+              const ok = await onSave(draft);
+              setSaving(false);
+              if (ok !== false) onClose();
             }}
-            className="btn-base rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+            disabled={saving}
+            className="btn-base rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Save changes
+            {saving ? "Saving..." : "Save changes"}
           </button>
         </div>
       </div>

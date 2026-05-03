@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspace } from "@/context/WorkspaceContext";
 import { LoadingState } from "@/components/StateView";
 import { ViewHeader } from "@/components/workspace-ui";
-import { USERS, WORKSPACES } from "@/lib/mock-workspace";
+import { USERS } from "@/lib/mock-workspace";
 import { Bell, Building2, CreditCard, LockKeyhole, PlugZap, UserRound, Users } from "lucide-react";
 
 type Tab = "profile" | "security" | "notifications" | "workspace" | "members" | "integrations" | "billing";
@@ -21,10 +22,45 @@ const tabs: Array<{ id: Tab; label: string; icon: ReactNode }> = [
 ];
 
 export default function SettingsPage() {
-  const { loading, logout } = useAuth();
+  const { loading, logout, user, updateProfile } = useAuth();
+  const { workspace } = useWorkspace();
   const [tab, setTab] = useState<Tab>("profile");
+  const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [statusText, setStatusText] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileInitialized, setProfileInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!user || profileInitialized) return;
+    setDisplayName(user.name);
+    setAvatarUrl(user.avatar);
+    setStatusText(user.statusText);
+    setProfileInitialized(true);
+  }, [user, profileInitialized]);
 
   if (loading) return <LoadingState title="Loading settings" />;
+
+  const saveProfile = async () => {
+    if (!user || profileLoading) return;
+    setProfileLoading(true);
+    setProfileMessage("");
+
+    try {
+      await updateProfile({
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        status_text: statusText,
+      });
+      setProfileMessage("Đã cập nhật hồ sơ.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Không thể cập nhật hồ sơ";
+      setProfileMessage(message);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-bg">
@@ -51,9 +87,35 @@ export default function SettingsPage() {
           {tab === "profile" ? (
             <div className="space-y-3">
               <h2 className="text-base font-bold text-text">Thong tin ho so</h2>
-              <input className="input-base w-full px-3 py-2.5 text-sm" defaultValue={USERS[0].display_name} />
-              <input className="input-base w-full px-3 py-2.5 text-sm" defaultValue={USERS[0].email} />
-              <textarea className="input-base w-full px-3 py-2.5 text-sm" defaultValue={USERS[0].status_text} rows={3} />
+              <input
+                className="input-base w-full px-3 py-2.5 text-sm"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                maxLength={100}
+              />
+              <input className="input-base w-full px-3 py-2.5 text-sm" value={user?.email ?? ""} disabled />
+              <input
+                className="input-base w-full px-3 py-2.5 text-sm"
+                value={avatarUrl}
+                onChange={(event) => setAvatarUrl(event.target.value)}
+                placeholder="https://..."
+              />
+              <textarea
+                className="input-base w-full px-3 py-2.5 text-sm"
+                value={statusText}
+                onChange={(event) => setStatusText(event.target.value)}
+                maxLength={150}
+                rows={3}
+              />
+              {profileMessage ? <p className="text-sm text-text-muted">{profileMessage}</p> : null}
+              <button
+                type="button"
+                onClick={saveProfile}
+                disabled={profileLoading}
+                className="btn-base rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {profileLoading ? "Dang luu..." : "Luu thay doi"}
+              </button>
             </div>
           ) : null}
 
@@ -81,8 +143,8 @@ export default function SettingsPage() {
           {tab === "workspace" ? (
             <div className="space-y-3">
               <h2 className="text-base font-bold text-text">Thong tin workspace</h2>
-              <input className="input-base w-full px-3 py-2.5 text-sm" defaultValue={WORKSPACES[0].name} />
-              <input className="input-base w-full px-3 py-2.5 text-sm" defaultValue={WORKSPACES[0].slug} />
+              <input className="input-base w-full px-3 py-2.5 text-sm" value={workspace?.name ?? ""} readOnly />
+              <input className="input-base w-full px-3 py-2.5 text-sm" value={workspace?.slug ?? ""} readOnly />
             </div>
           ) : null}
 

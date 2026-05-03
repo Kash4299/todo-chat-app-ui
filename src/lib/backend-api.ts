@@ -73,6 +73,15 @@ export interface CreateTaskRequest {
   due_date?: string;
 }
 
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string;
+  status?: "TODO" | "IN_PROGRESS" | "DONE";
+  priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  due_date?: string;
+  assignee_id?: string;
+}
+
 export class BackendApiError extends Error {
   constructor(
     public status: number,
@@ -258,6 +267,18 @@ export function getMe() {
   return requestProtectedBackend<BackendUser>("/users/me");
 }
 
+export function updateMeProfile(input: {
+  display_name: string;
+  avatar_url?: string;
+  status_text?: string;
+}) {
+  return requestProtectedBackend<BackendUser>("/users/me", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
 export function getWorkspaces(params: { page?: number; page_size?: number } = {}) {
   const qs = new URLSearchParams();
   if (params.page) qs.set("page", String(params.page));
@@ -322,4 +343,29 @@ export function createTask(input: CreateTaskRequest) {
 
 export function getTask(id: string) {
   return requestProtectedBackend<BackendTask>(`/tasks/${id}`);
+}
+
+export function getTasksByWorkspace(input: {
+  workspace_id: string;
+  page?: number;
+  page_size?: number;
+}) {
+  const query = new URLSearchParams({ workspace_id: input.workspace_id });
+  if (input.page) query.set("page", String(input.page));
+  if (input.page_size) query.set("page_size", String(input.page_size));
+  return requestProtectedBackendList<BackendTask>(`/tasks?${query.toString()}`);
+}
+
+export function updateTask(id: string, input: UpdateTaskRequest) {
+  return requestProtectedBackend<BackendTask>(`/tasks/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteTask(id: string) {
+  return requestProtectedBackend<void>(`/tasks/${id}`, {
+    method: "DELETE",
+  });
 }

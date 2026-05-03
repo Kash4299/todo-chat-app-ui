@@ -12,6 +12,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   accountLink: AccountLinkState | null;
+  updateProfile: (input: { display_name: string; avatar_url?: string; status_text?: string }) => Promise<void>;
   confirmAccountLink: (password: string) => Promise<void>;
   cancelAccountLink: () => void;
   logout: () => void;
@@ -104,6 +105,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (input: { display_name: string; avatar_url?: string; status_text?: string }) => {
+    const response = await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as AuthUser & ApiError;
+    if (!response.ok) {
+      throw new Error(payload.error || "Không thể cập nhật hồ sơ");
+    }
+
+    setUser(payload as AuthUser);
+  };
+
   const cancelAccountLink = () => {
     setAccountLink(null);
     window.location.href = "/auth/logout";
@@ -120,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         accountLink,
+        updateProfile,
         confirmAccountLink,
         cancelAccountLink,
         logout,

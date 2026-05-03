@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspace } from "@/context/WorkspaceContext";
 import { EmptyState, LoadingState } from "@/components/StateView";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { TaskCard, ViewHeader } from "@/components/workspace-ui";
-import { ME_ID, USER_BY_ID, type MockTask, loadMockTasks, saveMockTasks } from "@/lib/mock-workspace";
+import { ME_ID, USER_BY_ID, type MockTask } from "@/lib/mock-workspace";
+import type { BackendTask } from "@/lib/backend-api";
+import { toTaskView } from "@/lib/task-view";
 
 function TaskSection({
   title,
@@ -48,9 +51,16 @@ function TaskSection({
 
 export default function TodosPage() {
   const { loading } = useAuth();
-  const [tasks, setTasks] = useState(() => loadMockTasks());
+  const { workspace } = useWorkspace();
+  const [tasks, setTasks] = useState<MockTask[]>([]);
   const [now] = useState(() => Date.now());
   const [openTask, setOpenTask] = useState<MockTask | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "URGENT">("MEDIUM");
+  const [dueDate, setDueDate] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createMessage, setCreateMessage] = useState("");
 
   const mine = useMemo(() => tasks.filter((task) => task.assignee_id === ME_ID), [tasks]);
 
@@ -63,17 +73,100 @@ export default function TodosPage() {
     };
   }, [mine, now]);
 
-  const persist = (next: MockTask[]) => {
-    setTasks(next);
-    saveMockTasks(next);
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      if (!workspace) {
+        setTasks([]);
+        return;
+      }
+      const response = await fetch(`/api/tasks?workspace_id=${workspace.id}&page=1&page_size=100`);
+      if (!response.ok) return;
+      const payload = (await response.json()) as { data: BackendTask[] };
+      const backendTasks = payload.data ?? [];
+      if (cancelled) return;
+      setTasks(backendTasks.map(toTaskView));
+    };
+
+    load().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace]);
+
+  const markDone = async (taskId: string) => {
+    const previous = tasks;
+    setTasks(tasks.map((task) => (task.id === taskId ? { ...task, status: "DONE" as const } : task)));
+    const response = await fetch(`/api/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "DONE" }),
+    });
+    if (!response.ok) {
+      setTasks(previous);
+    }
   };
 
-  const markDone = (taskId: string) => {
-    persist(tasks.map((task) => (task.id === taskId ? { ...task, status: "DONE" as const } : task)));
+  const saveTask = async (nextTask: MockTask) => {
+    const response = await fetch(`/api/tasks/${nextTask.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: nextTask.description,
+        status: nextTask.status === "DONE" ? "DONE" : nextTask.status === "IN_PROGRESS" ? "IN_PROGRESS" : "TODO",
+        priority: nextTask.priority,
+        due_date: nextTask.due_date ? new Date(`${nextTask.due_date}T00:00:00.000Z`).toISOString() : undefined,
+      }),
+    });
+    if (!response.ok) return false;
+    setTasks(tasks.map((task) => (task.id === nextTask.id ? nextTask : task)));
+    return true;
   };
 
-  const saveTask = (nextTask: MockTask) => {
-    persist(tasks.map((task) => (task.id === nextTask.id ? nextTask : task)));
+  const submitCreateTask = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!workspace || !title.trim() || creating) return;
+
+    setCreating(true);
+    setCreateMessage("");
+
+    const payload: {
+      workspace_id: string;
+      title: string;
+      description?: string;
+      priority?: string;
+      due_date?: string;
+    } = {
+      workspace_id: workspace.id,
+      title: title.trim(),
+    };
+
+    if (description.trim()) payload.description = description.trim();
+    if (priority) payload.priority = priority;
+    if (dueDate) payload.due_date = new Date(`${dueDate}T00:00:00.000Z`).toISOString();
+
+    const response = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = (await response.json().catch(() => ({}))) as BackendTask & { error?: string };
+    if (!response.ok) {
+      setCreateMessage(result.error || "Không thể tạo task.");
+      setCreating(false);
+      return;
+    }
+
+    const created = toTaskView(result as BackendTask);
+    setTasks([created, ...tasks]);
+    setTitle("");
+    setDescription("");
+    setPriority("MEDIUM");
+    setDueDate("");
+    setCreateMessage("Đã tạo task thành công.");
+    setCreating(false);
   };
 
   if (loading) return <LoadingState title="Loading my tasks" />;
@@ -82,13 +175,56 @@ export default function TodosPage() {
     <div className="min-h-screen bg-bg">
       <ViewHeader title="Task cua toi" subtitle={`${mine.length} tasks assigned cho ban`} />
       <div className="mx-auto max-w-4xl p-5 md:p-7">
+        <form onSubmit={submitCreateTask} className="mb-5 space-y-3 rounded-xl border border-border bg-surface p-4">
+          <h2 className="text-sm font-bold text-text">Tao task moi</h2>
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            className="input-base w-full px-3 py-2 text-sm"
+            placeholder="Task title"
+            required
+          />
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            className="input-base w-full px-3 py-2 text-sm"
+            placeholder="Description"
+            rows={3}
+          />
+          <div className="grid gap-2 md:grid-cols-2">
+            <select
+              value={priority}
+              onChange={(event) => setPriority(event.target.value as "LOW" | "MEDIUM" | "HIGH" | "URGENT")}
+              className="input-base w-full px-3 py-2 text-sm"
+            >
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="URGENT">URGENT</option>
+            </select>
+            <input
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+              type="date"
+              className="input-base w-full px-3 py-2 text-sm"
+            />
+          </div>
+          {createMessage ? <p className="text-sm text-text-dim">{createMessage}</p> : null}
+          <button
+            type="submit"
+            disabled={!workspace || creating}
+            className="btn-base rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {creating ? "Dang tao..." : "Tao task"}
+          </button>
+        </form>
+
         {mine.length === 0 ? (
           <EmptyState title="Chua co task duoc giao" description="Task moi se hien thi o day." />
         ) : (
           <>
             <TaskSection title="Qua han" items={grouped.overdue} accent="var(--color-danger)" onMarkDone={markDone} onOpenTask={setOpenTask} />
             <TaskSection title="Dang lam" items={grouped.inProgress} accent="var(--color-primary)" onMarkDone={markDone} onOpenTask={setOpenTask} />
-            <TaskSection title="Can review" items={grouped.review} accent="var(--color-warning)" onMarkDone={markDone} onOpenTask={setOpenTask} />
             <TaskSection title="Da xong" items={grouped.done} accent="var(--color-success)" onMarkDone={markDone} onOpenTask={setOpenTask} />
           </>
         )}
