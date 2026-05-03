@@ -6,11 +6,11 @@ import { useWorkspace } from "@/context/WorkspaceContext";
 import { LoadingState } from "@/components/StateView";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { PriorityBadge, StatusBadge, ViewHeader } from "@/components/workspace-ui";
-import { type MockTask, USER_BY_ID } from "@/lib/mock-workspace";
+import { type MockTask, USER_BY_ID, USERS } from "@/lib/mock-workspace";
 import type { BackendTask } from "@/lib/backend-api";
 import { toTaskView } from "@/lib/task-view";
 
-type SortKey = "id" | "title" | "status" | "priority" | "due_date";
+type SortKey = "title" | "status" | "priority" | "due_date";
 
 export default function ListPage() {
   const { loading } = useAuth();
@@ -18,6 +18,7 @@ export default function ListPage() {
   const [tasks, setTasks] = useState<MockTask[]>([]);
   const [openTask, setOpenTask] = useState<MockTask | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "due_date", dir: "asc" });
+  const [assigneeFilter, setAssigneeFilter] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -39,8 +40,13 @@ export default function ListPage() {
     };
   }, [workspace]);
 
+  const filteredTasks = useMemo(() => {
+    if (!assigneeFilter) return tasks;
+    return tasks.filter((task) => task.assignee_id === assigneeFilter);
+  }, [tasks, assigneeFilter]);
+
   const sorted = useMemo(() => {
-    const arr = [...tasks];
+    const arr = [...filteredTasks];
     arr.sort((a, b) => {
       const av = a[sort.key];
       const bv = b[sort.key];
@@ -48,7 +54,7 @@ export default function ListPage() {
       return sort.dir === "asc" ? cmp : -cmp;
     });
     return arr;
-  }, [tasks, sort]);
+  }, [filteredTasks, sort]);
 
   const head = (key: SortKey, label: string) => (
     <th
@@ -75,23 +81,48 @@ export default function ListPage() {
     return true;
   };
 
-  if (loading) return <LoadingState title="Loading task list" />;
+  if (loading) return <LoadingState title="Đang tải danh sách công việc" />;
 
   return (
     <div className="min-h-screen bg-bg">
-      <ViewHeader title="Danh sach task" subtitle={`${tasks.length} task · sap xep va loc`} />
+      <ViewHeader
+        title="Danh sách công việc"
+        subtitle={`${filteredTasks.length} công việc · sắp xếp và lọc`}
+        right={(
+          <div className="flex items-center gap-2">
+            <select
+              value={assigneeFilter}
+              onChange={(event) => setAssigneeFilter(event.target.value)}
+              className="input-base rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Tất cả assignee</option>
+              {USERS.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.display_name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setAssigneeFilter("")}
+              className="btn-base rounded-lg border border-border px-3 py-2 text-sm text-text-muted hover:bg-bg-light"
+            >
+              Xóa lọc
+            </button>
+          </div>
+        )}
+      />
       <div className="p-5 md:p-7">
         <div className="card-base overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[920px] border-collapse text-sm">
               <thead className="border-b border-border bg-bg-light">
                 <tr>
-                  {head("id", "ID")}
-                  {head("title", "Task")}
-                  {head("status", "Trang thai")}
-                  {head("priority", "Uu tien")}
-                  <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[0.06em] text-text-dim">Assignee</th>
-                  {head("due_date", "Het han")}
+                  {head("title", "Công việc")}
+                  {head("status", "Trạng thái")}
+                  {head("priority", "Ưu tiên")}
+                  <th className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[0.06em] text-text-dim">Người thực hiện</th>
+                  {head("due_date", "Hết hạn")}
                 </tr>
               </thead>
               <tbody>
@@ -99,8 +130,7 @@ export default function ListPage() {
                   const user = USER_BY_ID[task.assignee_id];
                   return (
                     <tr key={task.id} onClick={() => setOpenTask(task)} className="cursor-pointer border-b border-border/70 bg-surface hover:bg-bg-light">
-                      <td className="px-3 py-2 text-xs font-semibold text-text-dim">{task.id}</td>
-                      <td className="px-3 py-2 font-semibold text-text">{task.title}</td>
+                      <td className="px-3 py-3 font-semibold text-text">{task.title}</td>
                       <td className="px-3 py-2"><StatusBadge status={task.status} /></td>
                       <td className="px-3 py-2"><PriorityBadge priority={task.priority} /></td>
                       <td className="px-3 py-2 text-text-muted">{user.display_name}</td>

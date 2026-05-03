@@ -29,16 +29,16 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: "/home", label: "Trang chu", icon: Home, hint: "Tong quan workspace" },
-  { href: "/notifications", label: "Hop thu", icon: Bell, hint: "Mention va updates" },
-  { href: "/chat", label: "Chat", icon: Hash, hint: "Kenh va DM" },
-  { href: "/todos", label: "Task cua toi", icon: CheckSquare, hint: "Danh sach ca nhan" },
+  { href: "/home", label: "Trang chủ", icon: Home, hint: "Tổng quan workspace" },
+  { href: "/notifications", label: "Hộp thư", icon: Bell, hint: "Mention và cập nhật" },
+  { href: "/chat", label: "Chat", icon: Hash, hint: "Kênh và DM" },
+  { href: "/todos", label: "Việc của tôi", icon: CheckSquare, hint: "Danh sách cá nhân" },
   { href: "/kanban", label: "Kanban", icon: LayoutGrid, hint: "Board theo status" },
-  { href: "/list", label: "Task list", icon: List, hint: "Bang chi tiet" },
-  { href: "/calendar", label: "Lich", icon: Calendar, hint: "Due date theo ngay" },
-  { href: "/people", label: "Thanh vien", icon: Users, hint: "People directory" },
-  { href: "/search", label: "Search", icon: Search, hint: "Tim trong workspace" },
-  { href: "/settings", label: "Cai dat", icon: Settings, hint: "Profile va workspace" },
+  { href: "/list", label: "Danh sách", icon: List, hint: "Bảng chi tiết" },
+  { href: "/calendar", label: "Lịch", icon: Calendar, hint: "Hạn theo ngày" },
+  { href: "/people", label: "Thành viên", icon: Users, hint: "Danh bạ workspace" },
+  { href: "/search", label: "Tìm kiếm", icon: Search, hint: "Tìm trong workspace" },
+  { href: "/settings", label: "Cài đặt", icon: Settings, hint: "Hồ sơ và workspace" },
 ];
 
 export default function Sidebar() {
@@ -66,28 +66,28 @@ export default function Sidebar() {
 
     if (response.ok) {
       setPassword("");
-      setPasswordMessage(payload.message || "Password set successfully");
+      setPasswordMessage(payload.message || "Đã tạo mật khẩu thành công");
     } else {
-      setPasswordMessage(payload.error || "Could not set password");
+      setPasswordMessage(payload.error || "Không thể tạo mật khẩu");
     }
 
     setPasswordLoading(false);
   };
 
   return (
-    <aside className="flex h-screen w-[300px] shrink-0 flex-col border-r border-border bg-bg-light">
+    <aside className="flex h-screen w-[308px] shrink-0 flex-col border-r border-border bg-[var(--surface-2)]">
       <div className="border-b border-border px-4 py-4">
         <div className="mb-3 rounded-xl border border-border bg-surface px-3 py-3">
           <p className="text-sm font-extrabold text-text">{workspace?.name ?? "KashFlow"}</p>
           <p className="text-xs text-text-dim">{workspace ? `kashflow.vn/${workspace.slug}` : "Chưa chọn workspace"}</p>
         </div>
-        <a href="/search" className="flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-2 text-xs text-text-dim hover:bg-bg-lighter">
-          Tim kiem nhanh
+        <a href="/search" className="flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-dim hover:bg-bg-lighter">
+          Tìm kiếm nhanh
           <span className="rounded border border-border px-1.5 py-0.5">⌘K</span>
         </a>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      <nav className="flex-1 space-y-1.5 overflow-y-auto p-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.href;
@@ -95,7 +95,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`block rounded-xl border px-3 py-2.5 transition ${isActive ? "border-primary/25 bg-primary/10" : "border-transparent hover:border-border hover:bg-surface"}`}
+              className={`block rounded-xl border px-3 py-2.5 transition ${isActive ? "border-primary/25 bg-primary/10 shadow-[var(--shadow-card)]" : "border-transparent hover:border-border hover:bg-surface"}`}
             >
               <div className="flex items-center gap-2.5">
                 <Icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-text-muted"}`} />
@@ -131,7 +131,7 @@ export default function Sidebar() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className="input-base w-full px-3 py-2 text-sm"
-                  placeholder="New password"
+                  placeholder="Mật khẩu mới"
                   type="password"
                   minLength={8}
                   required
@@ -143,14 +143,14 @@ export default function Sidebar() {
                     disabled={passwordLoading}
                     className="btn-base flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
                   >
-                    {passwordLoading ? "Saving..." : "Save"}
+                    {passwordLoading ? "Đang lưu..." : "Lưu"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowPasswordForm(false)}
                     className="btn-base rounded-lg border border-border px-3 py-2 text-xs text-text-muted hover:bg-surface"
                   >
-                    Cancel
+                    Hủy
                   </button>
                 </div>
               </form>
@@ -160,7 +160,7 @@ export default function Sidebar() {
                 className="btn-base flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface"
               >
                 <KeyRound className="h-4 w-4" />
-                Add password
+                Thêm mật khẩu
               </button>
             ) : null}
           </div>
@@ -171,7 +171,7 @@ export default function Sidebar() {
           className="btn-base flex w-full items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-text-muted hover:border-danger/25 hover:bg-danger/10 hover:text-danger"
         >
           <LogOut className="h-4 w-4" />
-          Logout
+          Đăng xuất
         </button>
       </div>
     </aside>

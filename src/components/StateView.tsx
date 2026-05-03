@@ -7,7 +7,7 @@ interface StateViewProps {
 
 export function LoadingState({ title, description }: StateViewProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
+    <div className="card-base mx-auto flex max-w-md flex-col items-center justify-center py-12 text-center">
       <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
         <Loader2 className="h-7 w-7 animate-spin" />
       </span>
@@ -19,7 +19,7 @@ export function LoadingState({ title, description }: StateViewProps) {
 
 export function ErrorState({ title, description }: StateViewProps) {
   return (
-    <div className="rounded-xl border border-danger/25 bg-danger/10 p-4 text-sm">
+    <div className="card-base rounded-xl border border-danger/25 bg-danger/10 p-4 text-sm">
       <div className="flex items-start gap-3">
         <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
         <div>
@@ -33,7 +33,7 @@ export function ErrorState({ title, description }: StateViewProps) {
 
 export function EmptyState({ title, description }: StateViewProps) {
   return (
-    <div className="py-14 text-center">
+    <div className="card-base py-14 text-center">
       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-bg-light">
         <Inbox className="h-8 w-8 text-text-dim" />
       </div>

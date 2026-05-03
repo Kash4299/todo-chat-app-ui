@@ -2,8 +2,8 @@ import AuthCard from "@/components/AuthCard";
 import { CheckCircle2, Layers3, Sparkles } from "lucide-react";
 
 const stats = [
-  { value: "24", label: "Thành viên active" },
-  { value: "1.2K", label: "Tasks tuần này" },
+  { value: "24", label: "Thành viên hoạt động" },
+  { value: "1.2K", label: "Công việc tuần này" },
   { value: "< 50ms", label: "Latency p95" },
 ];
 
@@ -61,7 +61,7 @@ export default async function Home() {
               </p>
               <p className="flex items-center gap-2">
                 <Layers3 className="h-4 w-4" />
-                Todos có mức ưu tiên, lọc nhanh
+                Công việc có mức ưu tiên, lọc nhanh
               </p>
             </div>
           </div>

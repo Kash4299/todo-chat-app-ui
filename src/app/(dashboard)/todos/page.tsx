@@ -39,7 +39,7 @@ function TaskSection({
                 onClick={() => onMarkDone(task.id)}
                 className="absolute right-2 top-2 rounded-md border border-border bg-surface px-2 py-1 text-[11px] font-semibold text-text-muted hover:bg-bg-light"
               >
-                Mark done
+                Đánh dấu xong
               </button>
             ) : null}
           </div>
@@ -169,26 +169,26 @@ export default function TodosPage() {
     setCreating(false);
   };
 
-  if (loading) return <LoadingState title="Loading my tasks" />;
+  if (loading) return <LoadingState title="Đang tải công việc của tôi" />;
 
   return (
     <div className="min-h-screen bg-bg">
-      <ViewHeader title="Task cua toi" subtitle={`${mine.length} tasks assigned cho ban`} />
+      <ViewHeader title="Công việc của tôi" subtitle={`${mine.length} công việc được giao cho bạn`} />
       <div className="mx-auto max-w-4xl p-5 md:p-7">
         <form onSubmit={submitCreateTask} className="mb-5 space-y-3 rounded-xl border border-border bg-surface p-4">
-          <h2 className="text-sm font-bold text-text">Tao task moi</h2>
+          <h2 className="text-sm font-bold text-text">Tạo công việc mới</h2>
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             className="input-base w-full px-3 py-2 text-sm"
-            placeholder="Task title"
+              placeholder="Tiêu đề công việc"
             required
           />
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             className="input-base w-full px-3 py-2 text-sm"
-            placeholder="Description"
+            placeholder="Mô tả"
             rows={3}
           />
           <div className="grid gap-2 md:grid-cols-2">
@@ -215,17 +215,17 @@ export default function TodosPage() {
             disabled={!workspace || creating}
             className="btn-base rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {creating ? "Dang tao..." : "Tao task"}
+            {creating ? "Đang tạo..." : "Tạo công việc"}
           </button>
         </form>
 
         {mine.length === 0 ? (
-          <EmptyState title="Chua co task duoc giao" description="Task moi se hien thi o day." />
+          <EmptyState title="Chưa có công việc được giao" description="Công việc mới sẽ hiển thị ở đây." />
         ) : (
           <>
-            <TaskSection title="Qua han" items={grouped.overdue} accent="var(--color-danger)" onMarkDone={markDone} onOpenTask={setOpenTask} />
-            <TaskSection title="Dang lam" items={grouped.inProgress} accent="var(--color-primary)" onMarkDone={markDone} onOpenTask={setOpenTask} />
-            <TaskSection title="Da xong" items={grouped.done} accent="var(--color-success)" onMarkDone={markDone} onOpenTask={setOpenTask} />
+            <TaskSection title="Quá hạn" items={grouped.overdue} accent="var(--color-danger)" onMarkDone={markDone} onOpenTask={setOpenTask} />
+            <TaskSection title="Đang làm" items={grouped.inProgress} accent="var(--color-primary)" onMarkDone={markDone} onOpenTask={setOpenTask} />
+            <TaskSection title="Đã xong" items={grouped.done} accent="var(--color-success)" onMarkDone={markDone} onOpenTask={setOpenTask} />
           </>
         )}
       </div>

@@ -16,7 +16,7 @@ interface InfoPayload {
 
 export default function AuthCard() {
   const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState("minh.an@kashflow.vn");
+  const [email, setEmail] = useState("ba.duy@kashflow.vn");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -64,7 +64,7 @@ export default function AuthCard() {
       if (payload.code === "EMAIL_NOT_VERIFIED") {
         setError("Email chưa được xác minh. Vui lòng kiểm tra inbox để xác minh trước khi đăng nhập.");
       } else {
-        setError(payload.error || "Authentication failed");
+        setError(payload.error || "Đăng nhập thất bại");
       }
     } catch {
       setError("Không thể kết nối. Vui lòng thử lại.");
@@ -143,7 +143,7 @@ export default function AuthCard() {
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               className="input-base w-full px-4 py-3 text-sm"
-              placeholder="Nguyen Van A"
+              placeholder="Nguyễn Văn A"
               autoComplete="name"
               required
             />
@@ -170,7 +170,7 @@ export default function AuthCard() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="w-full bg-transparent text-sm outline-none"
-              placeholder="At least 8 characters"
+              placeholder="Ít nhất 8 ký tự"
               type={showPassword ? "text" : "password"}
               autoComplete={isRegister ? "new-password" : "current-password"}
               minLength={8}
@@ -180,7 +180,7 @@ export default function AuthCard() {
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="cursor-pointer rounded-md p-1 text-text-dim hover:bg-bg-lighter hover:text-text"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -215,7 +215,7 @@ export default function AuthCard() {
           disabled={loading}
           className="btn-base flex w-full cursor-pointer items-center justify-center gap-2 bg-primary px-4 py-3 text-sm font-bold text-white shadow-[var(--shadow-pop)] hover:brightness-105 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Please wait..." : isRegister ? "Tạo tài khoản" : "Đăng nhập"}
+          {loading ? "Vui lòng chờ..." : isRegister ? "Tạo tài khoản" : "Đăng nhập"}
           <ArrowRight className="h-4 w-4" />
         </button>
       </form>

@@ -50,12 +50,12 @@ export default function ChatPage() {
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
   };
 
-  if (loading) return <LoadingState title="Loading chat" />;
+  if (loading) return <LoadingState title="Đang tải chat" />;
 
   return (
     <div className="flex min-h-screen bg-bg">
       <aside className="hidden w-64 shrink-0 border-r border-border bg-bg-light md:block">
-        <div className="border-b border-border px-4 py-3 text-xs font-bold uppercase tracking-[0.08em] text-text-dim">Channels</div>
+        <div className="border-b border-border px-4 py-3 text-xs font-bold uppercase tracking-[0.08em] text-text-dim">Kênh</div>
         <div className="space-y-1 p-2.5">
           {CHANNELS.map((channel) => (
             <button
@@ -68,7 +68,7 @@ export default function ChatPage() {
             </button>
           ))}
         </div>
-        <div className="border-t border-border px-4 py-3 text-xs font-bold uppercase tracking-[0.08em] text-text-dim">DMs</div>
+        <div className="border-t border-border px-4 py-3 text-xs font-bold uppercase tracking-[0.08em] text-text-dim">Tin nhắn trực tiếp</div>
         <div className="space-y-1 p-2.5">
           {DMS.map((dm) => (
             <button
@@ -92,7 +92,7 @@ export default function ChatPage() {
         </header>
 
         <div className="flex-1 space-y-1 overflow-y-auto px-4 py-4 md:px-6">
-          {roomMessages.length === 0 ? <EmptyState title="No messages yet" description="Hay gui tin nhan dau tien." /> : null}
+          {roomMessages.length === 0 ? <EmptyState title="Chưa có tin nhắn" description="Hãy gửi tin nhắn đầu tiên." /> : null}
           {roomMessages.map((message) => {
             const owner = USER_BY_ID[message.user_id];
             const mine = message.user_id === ME_ID;
@@ -101,7 +101,7 @@ export default function ChatPage() {
                 {!mine ? <Avatar user={owner} size={30} /> : null}
                 <div className={`max-w-[75%] ${mine ? "items-end" : "items-start"}`}>
                   <div className={`mb-1 flex items-center gap-2 text-xs ${mine ? "justify-end" : "justify-start"}`}>
-                    <span className="font-semibold text-text">{mine ? "Ban" : owner.display_name}</span>
+                    <span className="font-semibold text-text">{mine ? "Bạn" : owner.display_name}</span>
                     <span className="text-text-dim">{fmtTimeFull(message.created_at)}</span>
                   </div>
                   <div className={`rounded-2xl px-3 py-2 text-sm ${mine ? "rounded-tr-md bg-primary text-white" : "rounded-tl-md border border-border bg-surface text-text"}`}>
@@ -125,11 +125,11 @@ export default function ChatPage() {
                   send();
                 }
               }}
-              placeholder={isDM ? `Nhan tin cho ${dmUser?.display_name || "..."}` : `Nhan tin vao #${activeChannel?.name || "general"}`}
+              placeholder={isDM ? `Nhắn tin cho ${dmUser?.display_name || "..."}` : `Nhắn tin vào #${activeChannel?.name || "general"}`}
               className="w-full bg-transparent text-sm outline-none"
             />
             <button onClick={send} disabled={!text.trim()} className="btn-base rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50">
-              <span className="inline-flex items-center gap-1"><Send className="h-3.5 w-3.5" /> Gui</span>
+              <span className="inline-flex items-center gap-1"><Send className="h-3.5 w-3.5" /> Gửi</span>
             </button>
           </div>
         </footer>

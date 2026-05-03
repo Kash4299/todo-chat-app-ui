@@ -25,17 +25,17 @@ export default function NotificationsPage() {
     saveMockNotifications(next);
   };
 
-  if (loading) return <LoadingState title="Loading notifications" />;
+  if (loading) return <LoadingState title="Đang tải thông báo" />;
 
   return (
     <div className="min-h-screen bg-bg">
       <ViewHeader
-        title="Hop thu"
-        subtitle={`${unread} chua doc · ${items.length} tong`}
+        title="Hộp thư"
+        subtitle={`${unread} chưa đọc · ${items.length} tổng`}
         right={
           <button onClick={markAll} className="btn-base inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-muted hover:bg-bg-light">
             <CheckCheck className="h-4 w-4" />
-            Danh dau da doc
+            Đánh dấu đã đọc
           </button>
         }
       />
@@ -51,17 +51,17 @@ export default function NotificationsPage() {
             >
               <div className="mb-1 flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-text">
-                  {item.type === "MENTION" && `${actor?.display_name || "He thong"} da nhac den ban`}
-                  {item.type === "TASK_ASSIGNED" && `Ban duoc giao task ${item.payload.task_id || ""}`}
-                  {item.type === "TASK_DUE" && `Task ${item.payload.task_id || ""} sap den han`}
-                  {item.type === "CHANNEL_INVITE" && `Ban duoc moi vao kenh ${item.payload.channel_name || ""}`}
+                  {item.type === "MENTION" && `${actor?.display_name || "Hệ thống"} đã nhắc đến bạn`}
+                  {item.type === "TASK_ASSIGNED" && `Bạn được giao công việc ${item.payload.task_title || ""}`}
+                  {item.type === "TASK_DUE" && `Công việc ${item.payload.task_title || ""} sắp đến hạn`}
+                  {item.type === "CHANNEL_INVITE" && `Bạn được mời vào kênh ${item.payload.channel_name || ""}`}
                 </p>
                 <span className="text-xs text-text-dim">{fmtTimeShort(item.at)}</span>
               </div>
               {item.payload.preview ? <p className="text-sm text-text-muted">{item.payload.preview}</p> : null}
               <div className="mt-2 inline-flex items-center gap-1 text-xs text-text-dim">
                 <BellRing className="h-3.5 w-3.5" />
-                Bam de danh dau da doc
+                Bấm để đánh dấu đã đọc
               </div>
             </button>
           );

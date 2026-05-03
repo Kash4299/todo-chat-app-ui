@@ -61,11 +61,11 @@ export default function HomePage() {
     return true;
   };
 
-  if (loading) return <LoadingState title="Loading dashboard" />;
+  if (loading) return <LoadingState title="Đang tải tổng quan" />;
 
   return (
     <div className="min-h-screen bg-bg">
-      <ViewHeader title={`Chao ${user?.name || "ban"}`} subtitle="Tong quan workspace hom nay" />
+      <ViewHeader title={`Chào ${user?.name || "bạn"}`} subtitle="Tổng quan workspace hôm nay" />
 
       <div className="mx-auto grid max-w-6xl gap-4 p-5 md:grid-cols-3 md:p-7">
         <article className="card-base p-4">

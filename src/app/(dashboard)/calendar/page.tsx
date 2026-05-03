@@ -36,13 +36,13 @@ export default function CalendarPage() {
     return grouped;
   }, [tasks]);
 
-  if (loading) return <LoadingState title="Loading calendar" />;
+  if (loading) return <LoadingState title="Đang tải lịch" />;
 
   return (
     <div className="min-h-screen bg-bg">
       <ViewHeader
-        title="Lich"
-        subtitle="Hien thi task theo ngay den han"
+        title="Lịch"
+        subtitle="Hiển thị công việc theo ngày đến hạn"
         right={
           <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1">
             <button className="rounded-lg p-1.5 hover:bg-bg-light" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>
@@ -72,10 +72,10 @@ export default function CalendarPage() {
                 <div className="space-y-1">
                   {dayTasks.slice(0, 3).map((task) => (
                     <div key={task.id} className="truncate rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">
-                      {task.id}
+                      {task.title}
                     </div>
                   ))}
-                  {dayTasks.length > 3 ? <div className="text-[11px] text-text-dim">+{dayTasks.length - 3} khac</div> : null}
+                  {dayTasks.length > 3 ? <div className="text-[11px] text-text-dim">+{dayTasks.length - 3} khác</div> : null}
                 </div>
               </article>
             );

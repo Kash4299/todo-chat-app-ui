@@ -21,11 +21,11 @@ export default function SearchPage() {
     };
   }, [query]);
 
-  if (loading) return <LoadingState title="Loading search" />;
+  if (loading) return <LoadingState title="Đang tải tìm kiếm" />;
 
   return (
     <div className="min-h-screen bg-bg">
-      <ViewHeader title="Tim kiem workspace" subtitle="Channels, DMs, tasks, members" />
+      <ViewHeader title="Tìm kiếm workspace" subtitle="Kênh, tin nhắn, công việc, thành viên" />
 
       <div className="mx-auto max-w-5xl p-5 md:p-7">
         <div className="input-base mb-4 flex items-center gap-2 px-3 py-2.5">
@@ -33,7 +33,7 @@ export default function SearchPage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Tim nhap..."
+            placeholder="Tìm kiếm..."
             className="w-full bg-transparent text-sm outline-none"
           />
         </div>
@@ -68,7 +68,7 @@ export default function SearchPage() {
             <div className="space-y-1.5">
               {results.tasks.map((task) => (
                 <div key={task.id} className="rounded-lg bg-bg-light px-2.5 py-2 text-sm text-text">
-                  <div className="font-semibold">{task.id} · {task.title}</div>
+                  <div className="font-semibold">{task.title}</div>
                   <p className="mt-0.5 text-xs text-text-dim">Assignee: {USER_BY_ID[task.assignee_id].display_name}</p>
                 </div>
               ))}
