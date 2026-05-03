@@ -1,178 +1,140 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import {
-  Bell,
-  Calendar,
-  CheckSquare,
-  Hash,
-  Home,
-  KeyRound,
-  LayoutGrid,
-  List,
-  LogOut,
-  Search,
-  Settings,
-  Users,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { Bell, Calendar, CheckSquare, Home, LayoutGrid, Search, Users } from "lucide-react";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  hint: string;
-};
+const nav = [
+  { href: "/home", label: "Trang chủ", icon: Home },
+  { href: "/notifications", label: "Hộp thư", icon: Bell, badge: 3 },
+  { href: "/todos", label: "Task của tôi", icon: CheckSquare },
+  { href: "/kanban", label: "Bảng Kanban", icon: LayoutGrid },
+  { href: "/calendar", label: "Lịch", icon: Calendar },
+  { href: "/people", label: "Thành viên", icon: Users },
+];
 
-const navItems: NavItem[] = [
-  { href: "/home", label: "Trang chủ", icon: Home, hint: "Tổng quan workspace" },
-  { href: "/notifications", label: "Hộp thư", icon: Bell, hint: "Mention và cập nhật" },
-  { href: "/chat", label: "Chat", icon: Hash, hint: "Kênh và DM" },
-  { href: "/todos", label: "Việc của tôi", icon: CheckSquare, hint: "Danh sách cá nhân" },
-  { href: "/kanban", label: "Kanban", icon: LayoutGrid, hint: "Board theo status" },
-  { href: "/list", label: "Danh sách", icon: List, hint: "Bảng chi tiết" },
-  { href: "/calendar", label: "Lịch", icon: Calendar, hint: "Hạn theo ngày" },
-  { href: "/people", label: "Thành viên", icon: Users, hint: "Danh bạ workspace" },
-  { href: "/search", label: "Tìm kiếm", icon: Search, hint: "Tìm trong workspace" },
-  { href: "/settings", label: "Cài đặt", icon: Settings, hint: "Hồ sơ và workspace" },
+const channels = [
+  { name: "general" },
+  { name: "announcements", badge: 2, strong: true },
+  { name: "design-crit", badge: 5, strong: true },
+  { name: "engineering" },
+  { name: "random" },
+  { name: "chat-app", badge: 1, locked: true, strong: true },
+  { name: "kafka-debug", locked: true },
+];
+
+const dms = [
+  { name: "Huy Trần", badge: 2, initials: "HT", color: "#4D9D71" },
+  { name: "Lan Phạm", initials: "LP", color: "#CF5F4E" },
+  { name: "Tuấn Lê", initials: "TL", color: "#EC9A4D" },
+  { name: "Mai Nguyễn", initials: "MN", color: "#D56E59" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [password, setPassword] = useState("");
-  const [passwordMessage, setPasswordMessage] = useState("");
-  const [passwordLoading, setPasswordLoading] = useState(false);
-
-  const active = useMemo(() => navItems.find((item) => pathname === item.href)?.href, [pathname]);
   const { workspace } = useWorkspace();
 
-  const addPassword = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPasswordMessage("");
-    setPasswordLoading(true);
-
-    const response = await fetch("/api/auth/password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    const payload = await response.json().catch(() => ({}));
-
-    if (response.ok) {
-      setPassword("");
-      setPasswordMessage(payload.message || "Đã tạo mật khẩu thành công");
-    } else {
-      setPasswordMessage(payload.error || "Không thể tạo mật khẩu");
-    }
-
-    setPasswordLoading(false);
-  };
-
   return (
-    <aside className="flex h-screen w-[308px] shrink-0 flex-col border-r border-border bg-[var(--surface-2)]">
-      <div className="border-b border-border px-4 py-4">
-        <div className="mb-3 rounded-xl border border-border bg-surface px-3 py-3">
-          <p className="text-sm font-extrabold text-text">{workspace?.name ?? "KashFlow"}</p>
-          <p className="text-xs text-text-dim">{workspace ? `kashflow.vn/${workspace.slug}` : "Chưa chọn workspace"}</p>
+    <aside className="flex h-screen shrink-0 border-r border-border bg-[var(--surface-2)]">
+      <div className="flex w-[72px] flex-col items-center gap-2 border-r border-border py-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-primary text-lg font-extrabold text-white shadow-[var(--shadow-pop)]">
+          KF
         </div>
-        <a href="/search" className="flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-dim hover:bg-bg-lighter">
-          Tìm kiếm nhanh
-          <span className="rounded border border-border px-1.5 py-0.5">⌘K</span>
-        </a>
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#EE964B] text-lg font-bold text-white">A</div>
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#3E8F61] text-xl text-white">☕</div>
+        <div className="my-1 h-px w-8 bg-border" />
+        <button className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-2xl font-light text-[#3E8F61]">+</button>
       </div>
 
-      <nav className="flex-1 space-y-1.5 overflow-y-auto p-3">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = active === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`block rounded-xl border px-3 py-2.5 transition ${isActive ? "border-primary/25 bg-primary/10 shadow-[var(--shadow-card)]" : "border-transparent hover:border-border hover:bg-surface"}`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-text-muted"}`} />
-                <span className={`text-sm font-semibold ${isActive ? "text-primary" : "text-text"}`}>{item.label}</span>
-              </div>
-              <p className="mt-1 pl-6 text-xs text-text-dim">{item.hint}</p>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-border bg-surface px-3 py-3">
-        {user ? (
-          <div className="mb-3 rounded-xl border border-border bg-bg-light p-3">
-            <div className="mb-3 flex items-center gap-2.5">
-              <Image
-                src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}`}
-                alt={user.name || "User"}
-                width={36}
-                height={36}
-                unoptimized
-                className="h-9 w-9 rounded-full object-cover"
-              />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-text">{user.name}</p>
-                <p className="truncate text-xs text-text-dim">{user.email}</p>
-              </div>
+      <div className="flex w-[260px] flex-col">
+        <Link href="/settings" className="flex items-center gap-2 border-b border-border px-4 py-3 text-left hover:bg-surface transition-colors">
+          <div className="flex-1 min-w-0">
+            <div className="truncate text-[15px] font-black tracking-[-0.01em] text-text">{workspace?.name || "KashFlow Studio"}</div>
+            <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-text-dim">
+              <span className="inline-block h-2 w-2 rounded-full bg-success" />24 thành viên
             </div>
-
-            {user.canSetPassword && showPasswordForm ? (
-              <form onSubmit={addPassword} className="space-y-2">
-                <input
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="input-base w-full px-3 py-2 text-sm"
-                  placeholder="Mật khẩu mới"
-                  type="password"
-                  minLength={8}
-                  required
-                />
-                {passwordMessage ? <p className="text-xs text-text-dim">{passwordMessage}</p> : null}
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    disabled={passwordLoading}
-                    className="btn-base flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
-                  >
-                    {passwordLoading ? "Đang lưu..." : "Lưu"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordForm(false)}
-                    className="btn-base rounded-lg border border-border px-3 py-2 text-xs text-text-muted hover:bg-surface"
-                  >
-                    Hủy
-                  </button>
-                </div>
-              </form>
-            ) : user.canSetPassword ? (
-              <button
-                onClick={() => setShowPasswordForm(true)}
-                className="btn-base flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface"
-              >
-                <KeyRound className="h-4 w-4" />
-                Thêm mật khẩu
-              </button>
-            ) : null}
           </div>
-        ) : null}
+          <span className="text-text-dim">☼</span>
+        </Link>
 
-        <button
-          onClick={logout}
-          className="btn-base flex w-full items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-text-muted hover:border-danger/25 hover:bg-danger/10 hover:text-danger"
+        <a
+          href="/search"
+          className="mx-3 mt-3 flex items-center gap-2 rounded-[10px] border border-border bg-surface px-3 py-2 text-[13px] text-text-dim"
         >
-          <LogOut className="h-4 w-4" />
-          Đăng xuất
-        </button>
+          <Search className="h-3.5 w-3.5" />
+          <span className="flex-1">Tìm kiếm...</span>
+          <span className="rounded border border-border px-1.5 py-0.5 text-[11px]">⌘K</span>
+        </a>
+
+        <div className="px-2 pb-1 pt-2">
+          {nav.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`mb-0.5 flex items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-[14px] ${
+                  active ? "bg-primary/10 font-bold text-primary" : "text-text-muted hover:bg-surface"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="flex-1">{item.label}</span>
+                {item.badge ? <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-black text-white">{item.badge}</span> : null}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mx-3 my-2 h-px bg-border" />
+
+        <div className="scroll-y flex-1 px-2 pb-2">
+          <div className="mb-1 flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-[0.04em] text-text-dim">
+            <span>⌄ Kênh</span>
+            <span className="text-base">+</span>
+          </div>
+          {channels.map((ch) => (
+            <button key={ch.name} className="mb-0.5 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left text-[14px] text-text-muted hover:bg-surface">
+              <span className="text-[13px]">{ch.locked ? "🔒" : "#"}</span>
+              <span className={`flex-1 truncate ${ch.strong ? "font-bold text-text" : ""}`}>{ch.name}</span>
+              {ch.badge ? <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-black text-white">{ch.badge}</span> : null}
+            </button>
+          ))}
+
+          <div className="mb-1 mt-3 flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-[0.04em] text-text-dim">
+            <span>⌄ Tin nhắn riêng</span>
+            <span className="text-base">+</span>
+          </div>
+          {dms.map((dm) => (
+            <button key={dm.name} className="mb-0.5 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left text-[14px] text-text-muted hover:bg-surface">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: dm.color }}>
+                {dm.initials}
+              </span>
+              <span className="flex-1 truncate text-text">{dm.name}</span>
+              {dm.badge ? <span className="rounded-full bg-danger px-2 py-0.5 text-[10px] font-black text-white">{dm.badge}</span> : null}
+            </button>
+          ))}
+        </div>
+
+        <div className="border-t border-border bg-surface p-2.5">
+          <div className="flex items-center gap-2 rounded-[10px] bg-[var(--surface-2)] px-2.5 py-2">
+            <Image
+              src="https://ui-avatars.com/api/?name=Minh+An"
+              alt="Minh An"
+              width={32}
+              height={32}
+              unoptimized
+              className="h-8 w-8 rounded-full object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-bold text-text">Minh An</div>
+              <div className="truncate text-[11px] text-text-dim">Đang code feature mới ⚡</div>
+            </div>
+            <span className="text-text-dim">☼</span>
+          </div>
+        </div>
       </div>
     </aside>
   );

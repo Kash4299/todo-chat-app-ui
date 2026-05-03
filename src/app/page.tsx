@@ -4,7 +4,7 @@ import { CheckCircle2, Layers3, Sparkles } from "lucide-react";
 const stats = [
   { value: "24", label: "Thành viên hoạt động" },
   { value: "1.2K", label: "Công việc tuần này" },
-  { value: "< 50ms", label: "Latency p95" },
+  { value: "< 50ms", label: "Độ trễ p95" },
 ];
 
 export default async function Home() {
@@ -19,7 +19,7 @@ export default async function Home() {
               </span>
               <div>
                 <div className="text-lg font-extrabold tracking-tight text-text">KashFlow</div>
-                <div className="text-xs text-text-dim">Team workspace</div>
+                <div className="text-xs text-text-dim">Không gian làm việc nhóm</div>
               </div>
             </div>
             <AuthCard />
@@ -40,7 +40,7 @@ export default async function Home() {
               Chỗ làm việc gọn gàng cho team Việt.
             </h1>
             <p className="max-w-xl text-sm leading-7 text-white/80">
-              Chat realtime, todo management và luồng cộng tác trong cùng một không gian.
+              Chat thời gian thực, quản lý công việc và luồng cộng tác trong cùng một không gian.
               Tối ưu cho team product, design và engineering.
             </p>
           </div>
