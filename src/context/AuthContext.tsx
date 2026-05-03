@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect } from "react";
 import type { AuthUser } from "@/lib/auth-types";
+import { useAuthStore } from "@/store/auth-store";
 
 interface AccountLinkState {
   error: string;
@@ -37,9 +38,12 @@ function accountLinkMessage(status: number, error?: string) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [accountLink, setAccountLink] = useState<AccountLinkState | null>(null);
+  const user = useAuthStore((state) => state.user);
+  const loading = useAuthStore((state) => state.loading);
+  const accountLink = useAuthStore((state) => state.accountLink);
+  const setUser = useAuthStore((state) => state.setUser);
+  const setLoading = useAuthStore((state) => state.setLoading);
+  const setAccountLink = useAuthStore((state) => state.setAccountLink);
 
   useEffect(() => {
     fetch("/api/me")
@@ -67,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setLoading(false);
       });
-  }, []);
+  }, [setAccountLink, setLoading, setUser]);
 
   const confirmAccountLink = async (password: string) => {
     if (!accountLink || accountLink.loading) return;

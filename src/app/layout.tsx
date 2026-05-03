@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import QueryProvider from "@/components/QueryProvider";
 import { Be_Vietnam_Pro } from "next/font/google";
 import { validateServerEnv } from "@/lib/env";
 import "./globals.css";
@@ -24,7 +25,9 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${beVietnamPro.className} antialiased`}>{children}</body>
+      <body className={`${beVietnamPro.className} antialiased`}>
+        <QueryProvider>{children}</QueryProvider>
+      </body>
     </html>
   );
 }

@@ -9,17 +9,31 @@ export async function proxy(request: NextRequest) {
     request.cookies.get(LOCAL_ACCESS_COOKIE)?.value ||
       request.cookies.get(LOCAL_REFRESH_COOKIE)?.value,
   );
-  const isDashboardRoute = pathname === "/todos" || pathname === "/chat";
+  const protectedPrefixes = [
+    "/home",
+    "/todos",
+    "/kanban",
+    "/list",
+    "/calendar",
+    "/chat",
+    "/notifications",
+    "/people",
+    "/search",
+    "/settings",
+    "/onboarding",
+    "/workspace",
+  ];
+  const isProtectedRoute = protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
   if (pathname.startsWith("/auth/")) {
     return auth0.middleware(request);
   }
 
   if (hasLocalSession && pathname === "/") {
-    return NextResponse.redirect(new URL("/todos", request.url));
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
-  if (hasLocalSession && isDashboardRoute) {
+  if (hasLocalSession && isProtectedRoute) {
     return NextResponse.next();
   }
 
@@ -27,10 +41,10 @@ export async function proxy(request: NextRequest) {
   const session = await auth0.getSession(request);
 
   if (session && pathname === "/") {
-    return NextResponse.redirect(new URL("/todos", request.url));
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
-  if (!session && isDashboardRoute) {
+  if (!session && isProtectedRoute) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
