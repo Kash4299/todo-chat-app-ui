@@ -512,6 +512,112 @@ function MembersTab() {
   );
 }
 
+// ─── Security tab ─────────────────────────────────────────────────────────────
+
+function SecurityTab() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (saving) return;
+    if (newPassword !== confirmPassword) {
+      setMessage({ text: "Mật khẩu xác nhận không khớp.", ok: false });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setMessage({ text: "Mật khẩu mới phải có ít nhất 8 ký tự.", ok: false });
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/auth/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+      if (res.ok) {
+        setMessage({ text: data.message || "Đã cập nhật mật khẩu.", ok: true });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        setMessage({ text: data.error || "Không thể cập nhật mật khẩu.", ok: false });
+      }
+    } catch {
+      setMessage({ text: "Lỗi kết nối.", ok: false });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4">
+      <div>
+        <h2 className="text-base font-bold text-text">Bảo mật tài khoản</h2>
+        <p className="mt-0.5 text-sm text-text-dim">Cập nhật mật khẩu đăng nhập</p>
+      </div>
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Mật khẩu hiện tại
+          </label>
+          <input
+            className="input-base w-full px-3 py-2.5 text-sm"
+            type="password"
+            placeholder="••••••••"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Mật khẩu mới
+          </label>
+          <input
+            className="input-base w-full px-3 py-2.5 text-sm"
+            type="password"
+            placeholder="••••••••"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            minLength={8}
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Xác nhận mật khẩu mới
+          </label>
+          <input
+            className="input-base w-full px-3 py-2.5 text-sm"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </div>
+      </div>
+      {message ? (
+        <p className={`text-sm ${message.ok ? "text-success" : "text-danger"}`}>{message.text}</p>
+      ) : null}
+      <button
+        type="submit"
+        disabled={saving || !currentPassword || !newPassword || !confirmPassword}
+        className="btn-base rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+      >
+        {saving ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+      </button>
+    </form>
+  );
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -557,31 +663,7 @@ export default function SettingsPage() {
             <p className="text-sm text-text-dim">Chưa đăng nhập.</p>
           ) : null}
 
-          {tab === "security" ? (
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-base font-bold text-text">Bảo mật tài khoản</h2>
-                <p className="mt-0.5 text-sm text-text-dim">Cập nhật mật khẩu đăng nhập</p>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-text-muted uppercase tracking-wide">Mật khẩu hiện tại</label>
-                  <input className="input-base w-full px-3 py-2.5 text-sm" type="password" placeholder="••••••••" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-text-muted uppercase tracking-wide">Mật khẩu mới</label>
-                  <input className="input-base w-full px-3 py-2.5 text-sm" type="password" placeholder="••••••••" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-text-muted uppercase tracking-wide">Xác nhận mật khẩu mới</label>
-                  <input className="input-base w-full px-3 py-2.5 text-sm" type="password" placeholder="••••••••" />
-                </div>
-              </div>
-              <button className="btn-base rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white">
-                Cập nhật mật khẩu
-              </button>
-            </div>
-          ) : null}
+          {tab === "security" ? <SecurityTab /> : null}
 
           {tab === "notifications" ? (
             <div className="space-y-4">

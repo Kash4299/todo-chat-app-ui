@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { useAuth } from "@/context/AuthContext";
 import { Bell, Calendar, CheckSquare, Home, LayoutGrid, Search, Users } from "lucide-react";
 
 const nav = [
@@ -35,6 +36,7 @@ const dms = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { workspace } = useWorkspace();
+  const { user } = useAuth();
 
   return (
     <aside className="flex h-screen shrink-0 border-r border-border bg-[var(--surface-2)]">
@@ -119,21 +121,21 @@ export default function Sidebar() {
         </div>
 
         <div className="border-t border-border bg-surface p-2.5">
-          <div className="flex items-center gap-2 rounded-[10px] bg-[var(--surface-2)] px-2.5 py-2">
+          <Link href="/settings" className="flex items-center gap-2 rounded-[10px] bg-[var(--surface-2)] px-2.5 py-2 hover:bg-bg-light transition-colors">
             <Image
-              src="https://ui-avatars.com/api/?name=Minh+An"
-              alt="Minh An"
+              src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name ?? "U")}&size=32`}
+              alt={user?.name ?? "User"}
               width={32}
               height={32}
               unoptimized
               className="h-8 w-8 rounded-full object-cover"
             />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-bold text-text">Minh An</div>
-              <div className="truncate text-[11px] text-text-dim">Đang code feature mới ⚡</div>
+              <div className="truncate text-[13px] font-bold text-text">{user?.name ?? "..."}</div>
+              <div className="truncate text-[11px] text-text-dim">{user?.statusText || "Không có trạng thái"}</div>
             </div>
             <span className="text-text-dim">☼</span>
-          </div>
+          </Link>
         </div>
       </div>
     </aside>

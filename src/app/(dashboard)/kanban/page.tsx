@@ -11,7 +11,9 @@ import type { BackendTask } from "@/lib/backend-api";
 import { toTaskView } from "@/lib/task-view";
 import { Plus, X } from "lucide-react";
 
-const STATUSES: Array<{ id: MockTaskStatus; label: string }> = [
+type KanbanStatus = "TODO" | "IN_PROGRESS" | "DONE";
+
+const STATUSES: Array<{ id: KanbanStatus; label: string }> = [
   { id: "TODO", label: "Cần làm" },
   { id: "IN_PROGRESS", label: "Đang làm" },
   { id: "DONE", label: "Đã xong" },
@@ -22,14 +24,14 @@ export default function KanbanPage() {
   const { workspace } = useWorkspace();
   const [tasks, setTasks] = useState<MockTask[]>([]);
   const [dragging, setDragging] = useState<string | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<"TODO" | "IN_PROGRESS" | "DONE" | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<KanbanStatus | null>(null);
   const [openTask, setOpenTask] = useState<MockTask | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "URGENT">("MEDIUM");
   const [dueDate, setDueDate] = useState("");
-  const [newStatus, setNewStatus] = useState<"TODO" | "IN_PROGRESS" | "DONE">("TODO");
+  const [newStatus, setNewStatus] = useState<KanbanStatus>("TODO");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
@@ -60,13 +62,13 @@ export default function KanbanPage() {
   }, [tasks, assigneeFilter]);
 
   const grouped = useMemo(() => {
-    return STATUSES.reduce<Record<MockTaskStatus, MockTask[]>>((acc, status) => {
+    return STATUSES.reduce<Record<KanbanStatus, MockTask[]>>((acc, status) => {
       acc[status.id] = filteredTasks.filter((task) => task.status === status.id).sort((a, b) => a.position - b.position);
       return acc;
-    }, { TODO: [], IN_PROGRESS: [], REVIEW: [], DONE: [] });
+    }, { TODO: [], IN_PROGRESS: [], DONE: [] });
   }, [filteredTasks]);
 
-  const onDropTo = async (status: "TODO" | "IN_PROGRESS" | "DONE") => {
+  const onDropTo = async (status: KanbanStatus) => {
     if (!dragging) return;
     const previous = tasks;
     setTasks(tasks.map((task) => (task.id === dragging ? { ...task, status } : task)));
@@ -97,7 +99,7 @@ export default function KanbanPage() {
     return true;
   };
 
-  const openCreateModal = (status: "TODO" | "IN_PROGRESS" | "DONE") => {
+  const openCreateModal = (status: KanbanStatus) => {
     setNewStatus(status);
     setTitle("");
     setDescription("");
