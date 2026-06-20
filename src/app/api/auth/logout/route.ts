@@ -1,7 +1,6 @@
 import { BackendApiError, requestLocalAuth } from "@/lib/backend-api";
 import {
   clearLocalAuthCookies,
-  clearPendingLinkCookie,
   LOCAL_REFRESH_COOKIE,
 } from "@/lib/backend-auth";
 import { cookies } from "next/headers";
@@ -17,7 +16,6 @@ export async function POST() {
     }
 
     clearLocalAuthCookies(cookieStore);
-    clearPendingLinkCookie(cookieStore);
     return NextResponse.json({ message: "logged out" });
   } catch (error) {
     if (error instanceof BackendApiError) {

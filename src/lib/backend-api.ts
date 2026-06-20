@@ -1,8 +1,6 @@
 import "server-only";
 
-import { auth0 } from "@/lib/auth0";
 import {
-  auth0Audience,
   backendApiUrl,
   LOCAL_ACCESS_COOKIE,
   LOCAL_REFRESH_COOKIE,
@@ -174,8 +172,7 @@ export async function requestLocalAuth(
     | "/auth/verify-email"
     | "/auth/resend-verification"
     | "/auth/refresh"
-    | "/auth/logout"
-    | "/auth/link/confirm",
+    | "/auth/logout",
   body: unknown,
 ) {
   return requestBackend<AuthResponse | { tokens: TokenPair } | { message: string }>(path, {
@@ -183,13 +180,6 @@ export async function requestLocalAuth(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-}
-
-export function confirmAccountLink(pendingToken: string, password: string) {
-  return requestLocalAuth("/auth/link/confirm", {
-    pending_token: pendingToken,
-    password,
-  }) as Promise<AuthResponse>;
 }
 
 async function refreshLocalToken(refreshToken: string) {
@@ -221,7 +211,8 @@ export async function getBackendAccessToken() {
     }
   }
 
-  return (await auth0.getAccessToken({ audience: auth0Audience() })).token;
+  // No valid local session and Auth0 is gone — surface as unauthenticated.
+  throw new BackendApiError(401, { error: "unauthenticated" });
 }
 
 export async function requestProtectedBackend<T>(

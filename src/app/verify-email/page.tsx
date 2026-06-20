@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -19,7 +19,7 @@ function verifyMessage(status: number, code?: string, error?: string) {
   return error ?? "Không thể xác minh email. Vui lòng thử lại.";
 }
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = useMemo(() => searchParams.get("token")?.trim() ?? "", [searchParams]);
   const email = useMemo(() => searchParams.get("email")?.trim() ?? "", [searchParams]);
@@ -128,5 +128,24 @@ export default function VerifyEmailPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function VerifyEmailFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-bg p-4 md:p-8">
+      <div className="card-base w-full max-w-lg p-6 text-center md:p-8">
+        <h1 className="text-2xl font-extrabold tracking-tight text-text">Xác minh email</h1>
+        <p className="mt-3 text-sm text-text-dim">Đang tải thông tin xác minh...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<VerifyEmailFallback />}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

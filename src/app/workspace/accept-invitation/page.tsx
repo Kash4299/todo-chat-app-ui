@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 
 interface ApiError {
@@ -24,7 +24,7 @@ interface WorkspacePayload {
 
 const PENDING_WORKSPACE_KEY = "kashflow_pending_workspace_id";
 
-export default function AcceptInvitationPage() {
+function AcceptInvitationContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token")?.trim() ?? "";
   const { setWorkspace } = useWorkspace();
@@ -126,5 +126,24 @@ export default function AcceptInvitationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function AcceptInvitationFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-bg p-4 md:p-8">
+      <div className="card-base w-full max-w-xl p-6 md:p-8">
+        <h1 className="text-2xl font-extrabold tracking-tight text-text">Chap nhan loi moi</h1>
+        <p className="mt-2 text-sm text-text-dim">Đang tải thông tin lời mời...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function AcceptInvitationPage() {
+  return (
+    <Suspense fallback={<AcceptInvitationFallback />}>
+      <AcceptInvitationContent />
+    </Suspense>
   );
 }

@@ -1,0 +1,19 @@
+node_modules
+.next
+.git
+.gitignore
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Not needed in the build context
+README.md
+docs/
+.agent/
+.claude/
+*.zip
+npm-debug.log*
+Dockerfile
+.dockerignore

@@ -3,7 +3,6 @@ import { getRequiredEnv } from "@/lib/env";
 
 export const LOCAL_ACCESS_COOKIE = "todochat_access_token";
 export const LOCAL_REFRESH_COOKIE = "todochat_refresh_token";
-export const PENDING_LINK_COOKIE = "todochat_pending_link_token";
 
 export interface BackendUser {
   id: string;
@@ -59,10 +58,6 @@ export function backendApiUrl(path: string) {
   return `${apiBase}${path}`;
 }
 
-export function auth0Audience() {
-  return getRequiredEnv("AUTH0_AUDIENCE");
-}
-
 export function toAuthUser(user: BackendUser): AuthUser {
   return {
     id: user.id,
@@ -116,20 +111,4 @@ export function setLocalAuthCookies(
 export function clearLocalAuthCookies(cookieStore: MutableCookieStore) {
   cookieStore.delete(LOCAL_ACCESS_COOKIE);
   cookieStore.delete(LOCAL_REFRESH_COOKIE);
-}
-
-export function setPendingLinkCookie(cookieStore: MutableCookieStore, pendingToken: string) {
-  const secure = process.env.NODE_ENV === "production";
-
-  cookieStore.set(PENDING_LINK_COOKIE, pendingToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure,
-    path: "/",
-    maxAge: 10 * 60,
-  });
-}
-
-export function clearPendingLinkCookie(cookieStore: MutableCookieStore) {
-  cookieStore.delete(PENDING_LINK_COOKIE);
 }

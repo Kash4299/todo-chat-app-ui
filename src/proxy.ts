@@ -1,63 +1,50 @@
-import { auth0 } from "./lib/auth0";
-import { LOCAL_ACCESS_COOKIE, LOCAL_REFRESH_COOKIE } from "./lib/backend-auth";
+import { LOCAL_ACCESS_COOKIE, LOCAL_REFRESH_COOKIE } from "@/lib/backend-auth";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-export async function proxy(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-  const hasLocalSession = Boolean(
+const PROTECTED_PREFIXES = [
+  "/home",
+  "/todos",
+  "/kanban",
+  "/list",
+  "/calendar",
+  "/chat",
+  "/notifications",
+  "/people",
+  "/search",
+  "/settings",
+  "/onboarding",
+  "/workspace",
+];
+
+// Next.js 16 edge guard (the "proxy" convention, formerly "middleware").
+// Pure self-hosted-session check via cookies — no Auth0.
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const hasSession = Boolean(
     request.cookies.get(LOCAL_ACCESS_COOKIE)?.value ||
       request.cookies.get(LOCAL_REFRESH_COOKIE)?.value,
   );
-  const protectedPrefixes = [
-    "/home",
-    "/todos",
-    "/kanban",
-    "/list",
-    "/calendar",
-    "/chat",
-    "/notifications",
-    "/people",
-    "/search",
-    "/settings",
-    "/onboarding",
-    "/workspace",
-  ];
-  const isProtectedRoute = protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
-  if (pathname.startsWith("/auth/")) {
-    return auth0.middleware(request);
-  }
+  const isProtected = PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 
-  if (hasLocalSession && pathname === "/") {
+  if (hasSession && pathname === "/") {
     return NextResponse.redirect(new URL("/home", request.url));
   }
 
-  if (hasLocalSession && isProtectedRoute) {
-    return NextResponse.next();
-  }
-
-  const authResponse = await auth0.middleware(request);
-  const session = await auth0.getSession(request);
-
-  if (session && pathname === "/") {
-    return NextResponse.redirect(new URL("/home", request.url));
-  }
-
-  if (!session && isProtectedRoute) {
+  if (!hasSession && isProtected) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Always return the auth response.
-  //
-  // Note: The auth response forwards requests to your app routes by default.
-  // If you need to block requests, do it before calling auth0.middleware() or
-  // copy the authResponse headers except for x-middleware-next to your blocking response.
-  return authResponse;
+  return NextResponse.next();
 }
 
 export const config = {
+  // Pages only — skip the BFF API routes, Next internals, and static assets.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
 };

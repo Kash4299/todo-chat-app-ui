@@ -122,19 +122,6 @@ export default function AuthCard() {
         </p>
       </div>
 
-      <a
-        href="/auth/login"
-        className="btn-base flex w-full items-center justify-center gap-2 border border-border bg-bg-light px-4 py-3 text-sm font-semibold text-text hover:bg-bg-lighter"
-      >
-        Tiếp tục với Auth0
-      </a>
-
-      <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-dim">hoặc</span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
       <form onSubmit={submit} className="space-y-4">
         {isRegister && (
           <label className="block">
